@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image (ARM64)
 
 on:
   push:
@@ -16,6 +16,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ARM64 binary çalıştırmak için gerekli
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Buildx gerekli (build için)
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -23,37 +31,37 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 1 AMD64 build for testing (local load)
-      - name: Build amd64 test image
+      # 1 ARM64 build (load YOK!)
+      - name: Build ARM64 Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: test-image:latest
+          platforms: linux/arm64
+          load: false         # x86 runner bunu load edemez
+          push: false         # önce smoke test yapılacak
+          tags: arm64-test:latest
 
-      # 2) Smoke Test
-      - name: Smoke Test - check 200 OK
+      # 2) ARM64 smoke test (QEMU sayesinde)
+      - name: Smoke Test ARM64
         run: |
-          docker run -d -p 8080:80 --name testcontainer test-image:latest
-          sleep 3
+          docker run --rm --platform linux/arm64 -d -p 8080:80 --name webtest arm64-test:latest
+          sleep 4
           STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8080)
           echo "HTTP status: $STATUS"
+          docker rm -f webtest || true
           if [ "$STATUS" != "200" ]; then
             echo "❌ Smoke test FAILED"
-            docker logs testcontainer
             exit 1
           fi
           echo "✔ Smoke test PASSED"
-          docker rm -f testcontainer
 
-      # 3) Multi-arch build + push (final)
-      - name: Build & Push Multi-Arch Image
+      # 3) ARM64 PUSH (test geçince)
+      - name: Push ARM64 Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
           push: true
           tags: ghcr.io/esekizinci/pipeline-test:latest
