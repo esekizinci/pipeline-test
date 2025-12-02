@@ -16,17 +16,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # amd64 image for testing
-      - name: Build amd64 test image
+      # 1 Build AMD64 image for testing (local load)
+      - name: Build AMD64 test image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          load: true                     # x86 runner local'e alır
-          tags: testimage:latest         # local name, push YOK
+          load: true                # ONLY amd64 can be loaded on GitHub Runner
+          tags: testimage:latest     # local test image only
 
-      # Smoke test (amd64)
+      # 2 Smoke test on AMD64
       - name: Smoke Test - CURL check
         run: |
           docker run -d -p 8080:80 --name testcontainer testimage:latest
@@ -40,7 +40,7 @@ jobs:
           fi
           echo "✔ Smoke test PASSED"
 
-      # ARM64 build + push (final production image)
+      # 3 Build & Push ARM64 final image
       - name: Build & Push ARM64 Image
         uses: docker/build-push-action@v5
         with:
@@ -50,7 +50,6 @@ jobs:
           push: true
           tags: ghcr.io/esekizinci/pipeline-test:latest
 
-      # Cleanup test image (optional)
+      # 4 Cleanup test image (optional)
       - name: Cleanup test image
-        run: |
-          docker rmi testimage:latest || true
+        run: docker rmi testimage:latest || true
