@@ -16,17 +16,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 1 Build AMD64 image for testing (local load)
+      ###############################################
+      # 1) AMD64 IMAGE BUILD (LOCAL TEST İÇİN)
+      ###############################################
       - name: Build AMD64 test image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          load: true                # ONLY amd64 can be loaded on GitHub Runner
-          tags: testimage:latest     # local test image only
+          load: true            # LOCAL image olarak load edilir
+          tags: testimage:latest
 
-      # 2 Smoke test on AMD64
+      ###############################################
+      # 2) SMOKE TEST (AMD64)
+      ###############################################
       - name: Smoke Test - CURL check
         run: |
           docker run -d -p 8080:80 --name testcontainer testimage:latest
@@ -40,7 +44,19 @@ jobs:
           fi
           echo "✔ Smoke test PASSED"
 
-      # 3 Build & Push ARM64 final image
+      ###############################################
+      # 3) TEKRAR LOGIN (ARM PUSH ÖNCESİ ZORUNLU)
+      ###############################################
+      - name: Re-login to GHCR for ARM push
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      ###############################################
+      # 4) ARM64 IMAGE BUILD + PUSH
+      ###############################################
       - name: Build & Push ARM64 Image
         uses: docker/build-push-action@v5
         with:
@@ -50,6 +66,8 @@ jobs:
           push: true
           tags: ghcr.io/esekizinci/pipeline-test:latest
 
-      # 4 Cleanup test image (optional)
+      ###############################################
+      # 5) AMD64 TEST IMAGE CLEANUP
+      ###############################################
       - name: Cleanup test image
         run: docker rmi testimage:latest || true
