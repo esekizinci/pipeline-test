@@ -1,4 +1,4 @@
-name: Build and Push Docker Image (ARM64)
+name: Build and Push ARM64 Image
 
 on:
   push:
@@ -16,48 +16,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ARM64 binary çalıştırmak için gerekli
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      # Buildx gerekli (build için)
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # 1 ARM64 build (load YOK!)
-      - name: Build ARM64 Image
+      # amd64 image for testing
+      - name: Build amd64 test image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/arm64
-          load: false         # x86 runner bunu load edemez
-          push: false         # önce smoke test yapılacak
-          tags: arm64-test:latest
+          platforms: linux/amd64
+          load: true                     # x86 runner local'e alır
+          tags: testimage:latest         # local name, push YOK
 
-      # 2) ARM64 smoke test (QEMU sayesinde)
-      - name: Smoke Test ARM64
+      # Smoke test (amd64)
+      - name: Smoke Test - CURL check
         run: |
-          docker run --rm --platform linux/arm64 -d -p 8080:80 --name webtest arm64-test:latest
-          sleep 4
+          docker run -d -p 8080:80 --name testcontainer testimage:latest
+          sleep 3
           STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8080)
           echo "HTTP status: $STATUS"
-          docker rm -f webtest || true
+          docker rm -f testcontainer
           if [ "$STATUS" != "200" ]; then
             echo "❌ Smoke test FAILED"
             exit 1
           fi
           echo "✔ Smoke test PASSED"
 
-      # 3) ARM64 PUSH (test geçince)
-      - name: Push ARM64 Image
+      # ARM64 build + push (final production image)
+      - name: Build & Push ARM64 Image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -65,3 +49,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ghcr.io/esekizinci/pipeline-test:latest
+
+      # Cleanup test image (optional)
+      - name: Cleanup test image
+        run: |
+          docker rmi testimage:latest || true
