@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: hava
-        image: ghcr.io/esekizinci/pipeline-test:bed3c09b
+        image: ghcr.io/esekizinci/pipeline-test:74640be9
         ports:
         - containerPort: 80
         resources:
