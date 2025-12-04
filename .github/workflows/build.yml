@@ -157,7 +157,7 @@ jobs:
       ###############################################
       - name: Update Kubernetes manifest
         run: |
-          sed -i "s|ghcr.io/esekizinci/pipeline-test:.*|ghcr.io/esekizinci/pipeline-test:${IMAGE_TAG}|g" manifests/hava-deploy.yaml
+          sed -i "s|ghcr.io/esekizinci/pipeline-test:.*|ghcr.io/esekizinci/pipeline-test:${IMAGE_TAG}|g" manifests/hava-deploy.yml
 
 
       ###############################################
