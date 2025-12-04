@@ -1,3 +1,77 @@
+# name: Build and Push ARM64 Image
+
+# on:
+#   push:
+#     branches: ["main"]
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     permissions:
+#       contents: read
+#       packages: write
+
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+
+#       ###############################################
+#       # 1) AMD64 IMAGE BUILD (LOCAL TEST İÇİN)
+#       ###############################################
+#       - name: Build AMD64 test image
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: .
+#           file: ./Dockerfile
+#           platforms: linux/amd64
+#           load: true            # LOCAL image olarak load edilir
+#           tags: testimage:latest
+
+#       ###############################################
+#       # 2) SMOKE TEST (AMD64)
+#       ###############################################
+#       - name: Smoke Test - CURL check
+#         run: |
+#           docker run -d -p 8080:80 --name testcontainer testimage:latest
+#           sleep 3
+#           STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8080)
+#           echo "HTTP status: $STATUS"
+#           docker rm -f testcontainer
+#           if [ "$STATUS" != "200" ]; then
+#             echo "❌ Smoke test FAILED"
+#             exit 1
+#           fi
+#           echo "✔ Smoke test PASSED"
+
+#       ###############################################
+#       # 3) TEKRAR LOGIN (ARM PUSH ÖNCESİ ZORUNLU)
+#       ###############################################
+#       - name: Re-login to GHCR for ARM push
+#         uses: docker/login-action@v3
+#         with:
+#           registry: ghcr.io
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
+
+#       ###############################################
+#       # 4) ARM64 IMAGE BUILD + PUSH
+#       ###############################################
+#       - name: Build & Push ARM64 Image
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: .
+#           file: ./Dockerfile
+#           platforms: linux/arm64
+#           push: true
+#           tags: ghcr.io/esekizinci/pipeline-test:latest
+
+#       ###############################################
+#       # 5) AMD64 TEST IMAGE CLEANUP
+#       ###############################################
+#       - name: Cleanup test image
+#         run: docker rmi testimage:latest || true
+
 name: Build and Push ARM64 Image
 
 on:
@@ -9,15 +83,25 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
-      packages: write
+      contents: write       # needed for committing manifest updates
+      packages: write       # needed for GHCR
+      id-token: write
 
     steps:
+      ###############################################
+      # 1) CHECKOUT
+      ###############################################
       - name: Checkout
         uses: actions/checkout@v4
 
       ###############################################
-      # 1) AMD64 IMAGE BUILD (LOCAL TEST İÇİN)
+      # 2) DEFINE IMAGE TAG (short SHA)
+      ###############################################
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
+      ###############################################
+      # 3) AMD64 IMAGE BUILD FOR SMOKE TEST
       ###############################################
       - name: Build AMD64 test image
         uses: docker/build-push-action@v5
@@ -25,11 +109,11 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          load: true            # LOCAL image olarak load edilir
+          load: true
           tags: testimage:latest
 
       ###############################################
-      # 2) SMOKE TEST (AMD64)
+      # 4) SMOKE TEST (AMD64)
       ###############################################
       - name: Smoke Test - CURL check
         run: |
@@ -45,9 +129,9 @@ jobs:
           echo "✔ Smoke test PASSED"
 
       ###############################################
-      # 3) TEKRAR LOGIN (ARM PUSH ÖNCESİ ZORUNLU)
+      # 5) LOGIN TO GHCR
       ###############################################
-      - name: Re-login to GHCR for ARM push
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -55,7 +139,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       ###############################################
-      # 4) ARM64 IMAGE BUILD + PUSH
+      # 6) ARM64 IMAGE BUILD + PUSH
       ###############################################
       - name: Build & Push ARM64 Image
         uses: docker/build-push-action@v5
@@ -64,10 +148,30 @@ jobs:
           file: ./Dockerfile
           platforms: linux/arm64
           push: true
-          tags: ghcr.io/esekizinci/pipeline-test:latest
+          tags: |
+            ghcr.io/esekizinci/pipeline-test:${{ env.IMAGE_TAG }}
+            ghcr.io/esekizinci/pipeline-test:latest
 
       ###############################################
-      # 5) AMD64 TEST IMAGE CLEANUP
+      # 7) UPDATE K8S MANIFEST
+      ###############################################
+      - name: Update Kubernetes manifest
+        run: |
+          sed -i "s|ghcr.io/esekizinci/pipeline-test:.*|ghcr.io/esekizinci/pipeline-test:${IMAGE_TAG}|g" k8s/deployment.yaml
+
+      ###############################################
+      # 8) COMMIT UPDATED MANIFEST (FOR ARGOCD)
+      ###############################################
+      - name: Commit manifest change
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add k8s/deployment.yaml
+          git commit -m "Deploy image $IMAGE_TAG"
+          git push
+
+      ###############################################
+      # 9) CLEAN UP LOCAL IMAGES
       ###############################################
       - name: Cleanup test image
         run: docker rmi testimage:latest || true
