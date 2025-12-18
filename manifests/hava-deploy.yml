@@ -15,6 +15,11 @@ spec:
       containers:
       - name: hava
         image: ghcr.io/esekizinci/pipeline-test:cb1603d7
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         ports:
         - containerPort: 80
         resources:
