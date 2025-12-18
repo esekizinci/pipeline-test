@@ -20,6 +20,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        command: ["/bin/sh","-c"]
+        args:
+          - sed -i "s/__POD_NAME__/${POD_NAME}/g" /usr/share/nginx/html/index.html && nginx -g 'daemon off;'
         ports:
         - containerPort: 80
         resources:
