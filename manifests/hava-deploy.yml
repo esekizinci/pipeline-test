@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: hava
 spec:
-  replicas: 6
+  replicas: 30
   selector:
     matchLabels:
       app: hava
