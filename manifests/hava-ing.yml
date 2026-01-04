@@ -6,7 +6,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   rules:
-  - host: hava.ccie.local
+  - host: hava.ccie.lab
     http:
       paths:
       - path: /
