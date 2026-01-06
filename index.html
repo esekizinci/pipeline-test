@@ -1,49 +1,423 @@
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Eser Sekizinci</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eser Sekizinci • ArgoCD Test</title>
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="preconnect" href="https://api.open-meteo.com" />
+
   <style>
-    body {
-      background-color: #2e5a80;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 50px;
+    :root{
+      --bg1:#071a2b;
+      --bg2:#0c2a4a;
+      --card: rgba(255,255,255,.08);
+      --card2: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.70);
+      --accent:#fce300;
+      --ok:#3ddc97;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --radius: 18px;
     }
-    h1 {
-      color: #fce300;
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(252,227,0,.18), transparent 60%),
+        radial-gradient(900px 500px at 80% 10%, rgba(61,220,151,.14), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 28px 16px;
+      overflow-x:hidden;
     }
-    h2 {
-      color: #fce300;
+
+    /* subtle animated grid */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-2px;
+      background:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(closest-side, rgba(0,0,0,.75), transparent);
+      pointer-events:none;
+      opacity:.55;
+      animation: drift 14s linear infinite;
     }
-    p {
-      color: #fce300;
-      font-size: 1.2em;
+    @keyframes drift{
+      from{ transform: translate3d(0,0,0); }
+      to{ transform: translate3d(-60px,-60px,0); }
     }
-    #weatherChart {
-      max-width: 600px;
-      margin: 40px auto;
+
+    .wrap{
+      width:min(980px, 100%);
+    }
+
+    .header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 14px;
+    }
+
+    .title{
+      margin:0;
+      line-height:1.08;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      font-size: clamp(28px, 3.2vw, 46px);
+    }
+
+    .subtitle{
+      margin:10px 0 0 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.3vw, 16px);
+    }
+
+    .badgeRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+      align-items:center;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 8px 24px rgba(0,0,0,.20);
+      font-size: 13px;
+      color: var(--text);
+      user-select:none;
+      backdrop-filter: blur(10px);
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(61,220,151,.18);
+    }
+    .pill{
+      color: #0b1320;
+      background: var(--accent);
+      border: none;
+      font-weight: 700;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+      .badgeRow{ justify-content:flex-start; }
+    }
+
+    .card{
+      background: linear-gradient(180deg, var(--card), rgba(255,255,255,.05));
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      backdrop-filter: blur(12px);
+    }
+
+    .card::after{
+      content:"";
+      position:absolute;
+      inset: -120px -160px auto auto;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle at 30% 30%, rgba(252,227,0,.28), transparent 60%);
+      transform: rotate(12deg);
+      pointer-events:none;
+      opacity:.8;
+    }
+
+    .cardHeader{
+      padding: 16px 18px 10px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .cardTitle{
+      margin:0;
+      font-size: 16px;
+      letter-spacing: .02em;
+      color: rgba(255,255,255,.92);
+      font-weight: 700;
+    }
+    .cardMeta{
+      color: var(--muted);
+      font-size: 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .kv{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      padding: 0 18px 18px 18px;
+    }
+
+    .kvRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 12px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .k{
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .v{
+      font-weight: 800;
+      color: rgba(255,255,255,.94);
+      font-size: 14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-weight: 700;
+      font-size: 12.5px;
+      color: rgba(255,255,255,.92);
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      white-space: nowrap;
+    }
+
+    .copyBtn{
+      cursor:pointer;
+      border:none;
+      background: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      transition: transform .08s ease, background .12s ease;
+    }
+    .copyBtn:hover{ background: rgba(255,255,255,.14); }
+    .copyBtn:active{ transform: translateY(1px); }
+
+    .chartWrap{
+      padding: 0 14px 16px 14px;
+    }
+    .chartBox{
+      border-radius: 16px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 10px 10px 6px 10px;
+    }
+
+    #weatherChart{
+      width: 100%;
+      height: 320px;
+    }
+
+    .footer{
+      margin-top: 14px;
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+    }
+
+    .spark{
+      display:inline-block;
+      width: 9px; height: 9px;
+      background: var(--accent);
+      border-radius: 2px;
+      transform: rotate(15deg);
+      box-shadow: 0 0 0 4px rgba(252,227,0,.14);
+      margin-right: 8px;
     }
   </style>
 </head>
+
 <body>
-    <h1>Deployed by ArgoCD</h1>
-    <p>4 Replicas with Container IDs for LB Tests! 🌱 !</p>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1 class="title">Deployed by ArgoCD</h1>
+        <p class="subtitle"><span class="spark"></span>LB test sayfası • Pod/replica görünürlüğü + 24 saat Vianen sıcaklık grafiği</p>
+      </div>
 
-    <p>Served by pod: <b>__POD_NAME__</b></p>
+      <div class="badgeRow">
+        <div class="badge"><span class="dot"></span>Healthy</div>
+        <div class="badge pill">k3s • HAProxy TLS Passthrough</div>
+      </div>
+    </div>
 
-  <h2>Vianen Hava Durumu (24 Saat)</h2>
-  <canvas id="weatherChart"></canvas>
+    <div class="grid">
+      <!-- Left: chart -->
+      <div class="card">
+        <div class="cardHeader">
+          <h2 class="cardTitle">Vianen Hava Durumu</h2>
+          <div class="cardMeta">
+            <span id="updatedAt">—</span>
+            <span>•</span>
+            <span>Next 24h</span>
+          </div>
+        </div>
+
+        <div class="chartWrap">
+          <div class="chartBox">
+            <canvas id="weatherChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: runtime / pod info -->
+      <div class="card">
+        <div class="cardHeader">
+          <h2 class="cardTitle">Runtime</h2>
+          <div class="cardMeta">
+            <span id="now">—</span>
+          </div>
+        </div>
+
+        <div class="kv">
+          <div class="kvRow">
+            <div>
+              <div class="k">Replicas</div>
+              <div class="v">4 <span style="color:rgba(255,255,255,.62); font-weight:600;">pods</span></div>
+            </div>
+            <div class="badge" style="margin:0; padding:8px 10px;">Round-robin</div>
+          </div>
+
+          <div class="kvRow">
+            <div>
+              <div class="k">Served by pod</div>
+              <div class="v">
+                <span class="mono" id="podName">__POD_NAME__</span>
+              </div>
+            </div>
+            <button class="copyBtn" id="copyPod">Copy</button>
+          </div>
+
+          <div class="kvRow">
+            <div>
+              <div class="k">Endpoint</div>
+              <div class="v">
+                <span class="mono" id="endpoint">https://argocd.ccie.lab</span>
+              </div>
+            </div>
+            <button class="copyBtn" id="copyUrl">Copy</button>
+          </div>
+
+          <div class="kvRow">
+            <div>
+              <div class="k">Tip</div>
+              <div class="v" style="font-weight:700; color:rgba(255,255,255,.86);">
+                Aynı URL’yi refresh ederek hangi pod’a düştüğünü gör
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>© Eser Sekizinci • test page</div>
+      <div>Weather data: Open-Meteo</div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    function fmtTime(d){
+      return d.toLocaleString('tr-TR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }
+
+    document.getElementById('now').textContent = fmtTime(new Date());
+
+    setInterval(() => {
+      document.getElementById('now').textContent = fmtTime(new Date());
+    }, 1000);
+
+    async function copyText(text){
+      try{
+        await navigator.clipboard.writeText(text);
+      }catch(e){
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+    }
+
+    document.getElementById('copyPod').addEventListener('click', async () => {
+      const pod = document.getElementById('podName').textContent.trim();
+      await copyText(pod);
+      const btn = document.getElementById('copyPod');
+      const old = btn.textContent;
+      btn.textContent = 'Copied ✓';
+      setTimeout(()=>btn.textContent = old, 900);
+    });
+
+    document.getElementById('copyUrl').addEventListener('click', async () => {
+      const url = document.getElementById('endpoint').textContent.trim();
+      await copyText(url);
+      const btn = document.getElementById('copyUrl');
+      const old = btn.textContent;
+      btn.textContent = 'Copied ✓';
+      setTimeout(()=>btn.textContent = old, 900);
+    });
+
     async function drawWeatherChart() {
-      const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto';
+      const response = await fetch(url, { cache: 'no-store' });
       const data = await response.json();
-      const labels = data.hourly.time.slice(0, 24).map(t => t.split('T')[1]);
+
+      const labels = data.hourly.time.slice(0, 24).map(t => t.split('T')[1].slice(0,5)); // HH:MM
       const temps = data.hourly.temperature_2m.slice(0, 24);
 
+      const updated = new Date();
+      document.getElementById('updatedAt').textContent =
+        'Updated ' + updated.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+
       const ctx = document.getElementById('weatherChart').getContext('2d');
+
       new Chart(ctx, {
         type: 'line',
         data: {
@@ -52,15 +426,40 @@
             label: 'Sıcaklık (°C)',
             data: temps,
             borderColor: '#fce300',
-            backgroundColor: '#fce300',
+            backgroundColor: 'rgba(252,227,0,.18)',
+            pointRadius: 2,
+            pointHoverRadius: 5,
             fill: true,
-            tension: 0.3
+            tension: 0.35
           }]
         },
         options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: 'rgba(255,255,255,.85)',
+                font: { weight: '700' }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.parsed.y} °C`
+              }
+            }
+          },
           scales: {
-            x: { display: true, title: { display: true, text: 'Saat' }},
-            y: { display: true, title: { display: true, text: '°C' }}
+            x: {
+              ticks: { color: 'rgba(255,255,255,.70)' },
+              grid: { color: 'rgba(255,255,255,.06)' },
+              title: { display: true, text: 'Saat', color: 'rgba(255,255,255,.75)', font:{ weight:'700' } }
+            },
+            y: {
+              ticks: { color: 'rgba(255,255,255,.70)' },
+              grid: { color: 'rgba(255,255,255,.06)' },
+              title: { display: true, text: '°C', color: 'rgba(255,255,255,.75)', font:{ weight:'700' } }
+            }
           }
         }
       });
@@ -70,3 +469,4 @@
   </script>
 </body>
 </html>
+```
