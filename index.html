@@ -1,127 +1,174 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Dashboard • Canlı</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg: #0b0f1a; --card: rgba(255, 255, 255, 0.05);
-            --accent: #fce300; --ok: #3ddc97; --text: #f0f0f0;
-        }
-        body {
-            margin: 0; min-height: 100vh; font-family: 'Inter', system-ui, sans-serif;
-            background: radial-gradient(circle at top right, #1a2a4a, var(--bg));
-            color: var(--text); display: flex; justify-content: center; padding: 20px;
-        }
-        .container { width: 100%; max-width: 900px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        /* Dashboard Grid */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .card {
-            background: var(--card); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px; padding: 25px; backdrop-filter: blur(12px);
-            transition: transform 0.3s ease;
-        }
-        .card:hover { transform: translateY(-5px); border-color: var(--accent); }
-        
-        .val { font-size: 3.5rem; font-weight: 800; margin: 10px 0; letter-spacing: -2px; }
-        .unit { font-size: 1.5rem; color: var(--text); opacity: 0.5; }
-        .label { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 2px; color: var(--accent); }
-        
-        /* Status & Pod Info */
-        .footer-info { margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; }
-        .badge {
-            background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 100px;
-            font-size: 0.8rem; font-family: monospace; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .dot { display: inline-block; width: 8px; height: 8px; background: var(--ok); border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px var(--ok); }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eser Sekizinci • Lab Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg1: #071a2b; --bg2: #0c2a4a;
+      --card: rgba(255, 255, 255, 0.07);
+      --accent: #fce300; --text: #ffffff;
+      --muted: rgba(255, 255, 255, 0.6);
+      --border: rgba(255, 255, 255, 0.12);
+    }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
+      color: var(--text); display: flex; justify-content: center; padding: 24px 16px;
+    }
+    .wrap { width: 100%; max-width: 960px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .title { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
+    .subtitle { font-size: 14px; color: var(--muted); margin: 4px 0 0 0; }
+
+    /* Ana Grid */
+    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; backdrop-filter: blur(15px); padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .card-label { text-transform: uppercase; font-size: 11px; letter-spacing: 1.5px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
+    
+    /* Sensör Rakamları */
+    .sensor-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+    .big-val { font-size: 42px; font-weight: 800; color: var(--text); }
+    .big-val span { font-size: 18px; color: var(--muted); margin-left: 4px; }
+
+    /* Grafik Alanı */
+    .chart-box { background: rgba(0, 0, 0, 0.2); border-radius: 14px; padding: 12px; border: 1px solid var(--border); margin-top: 10px; }
+
+    /* Footer / Badges */
+    .badge-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .badge {
+      background: rgba(255, 255, 255, 0.08); padding: 6px 14px; border-radius: 99px;
+      font-size: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 8px #3ddc97; }
+    .mono { font-family: monospace; font-weight: 700; color: var(--accent); }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1 class="title">ArgoCD Live Dashboard</h1>
+      <p class="subtitle" id="live-clock">Yükleniyor...</p>
+    </div>
+    <div class="badge"><span class="dot"></span> Sistem Online</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Vianen, NL • 24 Saatlik Beklenen Trend</div>
+      <div class="chart-box">
+        <canvas id="weatherChart" style="height: 280px;"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Lab Sensörleri (PostgreSQL)</div>
+      
+      <div class="sensor-row">
         <div>
-            <h1 style="margin:0; font-size: 1.8rem;">Lab Monitor</h1>
-            <p style="opacity:0.6; margin:5px 0 0 0;" id="live-clock">--:--:--</p>
+          <div style="font-size: 12px; color: var(--muted);">Sıcaklık</div>
+          <div class="big-val" id="db-temp">--<span>°C</span></div>
         </div>
-        <div class="badge"><span class="dot"></span>Sistem Aktif</div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <div class="label">Sıcaklık</div>
-            <div class="val" id="temp">--<span class="unit">°C</span></div>
-            <div style="font-size: 0.8rem; opacity: 0.5;" id="db-ts">DB bekleniyor...</div>
+        <div>
+          <div style="font-size: 12px; color: var(--muted);">Nem</div>
+          <div class="big-val" id="db-hum">--<span>%</span></div>
         </div>
+      </div>
 
-        <div class="card">
-            <div class="label">Nem</div>
-            <div class="val" id="hum" style="color: var(--ok);">--<span class="unit">%</span></div>
-            <div style="font-size: 0.8rem; opacity: 0.5;">Canlı Sensör Verisi</div>
+      <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <div class="card-label">Runtime Bilgisi</div>
+        <div style="font-size: 13px; margin-bottom: 8px;">
+          <span style="color: var(--muted);">Served by Pod:</span> 
+          <span class="mono" id="pod-id">Tespit ediliyor...</span>
         </div>
+        <div style="font-size: 11px; color: var(--muted);" id="db-update-time">DB verisi bekleniyor...</div>
+      </div>
     </div>
+  </div>
 
-    <div class="card" style="margin-top: 20px;">
-        <div class="label" style="margin-bottom: 15px;">24 Saatlik Trend</div>
-        <canvas id="miniChart" style="max-height: 180px;"></canvas>
-    </div>
-
-    <div class="footer-info">
-        <div class="badge">Served by: <span id="pod-name" style="color:var(--accent)">{{ .PodName }}</span></div>
-        <div class="badge">DB: 192.168.6.230</div>
-        <div class="badge">ArgoCD Deployed</div>
-    </div>
+  <div class="badge-row">
+    <div class="badge">Endpoint: <span class="mono">argocd.ccie.lab</span></div>
+    <div class="badge">DB: <span class="mono">192.168.6.230</span></div>
+    <div class="badge">Region: <span class="mono">Vianen / Utrecht</span></div>
+  </div>
 </div>
 
 <script>
-    // 1. Saat Güncelleme
-    setInterval(() => {
-        document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR');
-    }, 1000);
+  // 1. Pod İsmini Tespit Et (Dinamik)
+  // ArgoCD podları hostname bilgisini çevre değişkeninden alır, bunu JS ile gösteriyoruz.
+  document.getElementById('pod-id').innerText = window.location.hostname || "Local-Dev";
 
-    // 2. DB'den Canlı Veri Çekme
-    async function updateData() {
-        try {
-            const res = await fetch('http://192.168.6.230:5000/data');
-            const data = await res.json();
-            if(!data.error) {
-                document.getElementById('temp').firstChild.textContent = data.temperature;
-                document.getElementById('hum').firstChild.textContent = data.humidity;
-                document.getElementById('db-ts').innerText = "Son DB Kaydı: " + data.ts;
-            }
-        } catch (e) { console.error("API Error"); }
-    }
-    setInterval(updateData, 5000);
-    updateData();
+  // 2. Saat ve Tarih (Vianen Formatı)
+  setInterval(() => {
+    document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR', { 
+      day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    });
+  }, 1000);
 
-    // 3. Basit Grafik (Open-Meteo)
-    async function initChart() {
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
-        const data = await res.json();
-        new Chart(document.getElementById('miniChart'), {
-            type: 'line',
-            data: {
-                labels: data.hourly.time.slice(0, 24).map(t => t.split('T')[1]),
-                datasets: [{
-                    label: 'Sıcaklık',
-                    data: data.hourly.temperature_2m.slice(0, 24),
-                    borderColor: '#fce300',
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointRadius: 0
-                }]
-            },
-            options: { 
-                plugins: { legend: { display: false } },
-                scales: { y: { display: false }, x: { grid: { display: false } } } 
-            }
-        });
+  // 3. PostgreSQL Lab Verilerini Çek
+  async function fetchLabData() {
+    try {
+      const res = await fetch('http://192.168.6.230:5000/data');
+      const data = await res.json();
+      if(data.temperature) {
+        document.getElementById('db-temp').firstChild.textContent = data.temperature;
+        document.getElementById('db-hum').firstChild.textContent = data.humidity;
+        document.getElementById('db-update-time').innerText = "Son DB Güncelleme: " + data.ts;
+      }
+    } catch (e) {
+      console.error("DB API Hatası");
     }
-    initChart();
+  }
+  setInterval(fetchLabData, 5000);
+  fetchLabData();
+
+  // 4. Vianen Detaylı Hava Durumu Grafiği (Eski Profesyonel Stil)
+  async function drawChart() {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto';
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    const labels = data.hourly.time.slice(0, 24).map(t => t.split('T')[1].slice(0,5));
+    const temps = data.hourly.temperature_2m.slice(0, 24);
+
+    new Chart(document.getElementById('weatherChart'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Sıcaklık (°C)',
+          data: temps,
+          borderColor: '#fce300',
+          backgroundColor: 'rgba(252, 227, 0, 0.1)',
+          fill: true,
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+  drawChart();
 </script>
 
 </body>
