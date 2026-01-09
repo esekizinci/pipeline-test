@@ -24,33 +24,28 @@
     .title { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
     .subtitle { font-size: 14px; color: var(--muted); margin: 4px 0 0 0; }
 
-    /* Ana Grid */
     .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
     @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
 
     .card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 18px; backdrop-filter: blur(15px); padding: 20px;
-      position: relative; overflow: hidden;
     }
     .card-label { text-transform: uppercase; font-size: 11px; letter-spacing: 1.5px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
     
-    /* Sensör Rakamları */
     .sensor-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
     .big-val { font-size: 42px; font-weight: 800; color: var(--text); }
     .big-val span { font-size: 18px; color: var(--muted); margin-left: 4px; }
 
-    /* Grafik Alanı */
     .chart-box { background: rgba(0, 0, 0, 0.2); border-radius: 14px; padding: 12px; border: 1px solid var(--border); margin-top: 10px; }
 
-    /* Footer / Badges */
     .badge-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
     .badge {
       background: rgba(255, 255, 255, 0.08); padding: 6px 14px; border-radius: 99px;
       font-size: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 8px #3ddc97; }
-    .mono { font-family: monospace; font-weight: 700; color: var(--accent); }
+    .mono { font-family: monospace; font-weight: 700; color: var(--accent); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -90,7 +85,7 @@
         <div class="card-label">Runtime Bilgisi</div>
         <div style="font-size: 13px; margin-bottom: 8px;">
           <span style="color: var(--muted);">Served by Pod:</span> 
-          <span class="mono" id="pod-id">Tespit ediliyor...</span>
+          <span class="mono" id="pod-id">__POD_NAME__</span>
         </div>
         <div style="font-size: 11px; color: var(--muted);" id="db-update-time">DB verisi bekleniyor...</div>
       </div>
@@ -99,24 +94,19 @@
 
   <div class="badge-row">
     <div class="badge">Endpoint: <span class="mono">argocd.ccie.lab</span></div>
-    <div class="badge">DB: <span class="mono">192.168.6.230</span></div>
     <div class="badge">Region: <span class="mono">Vianen / Utrecht</span></div>
   </div>
 </div>
 
 <script>
-  // 1. Pod İsmini Tespit Et (Dinamik)
-  // ArgoCD podları hostname bilgisini çevre değişkeninden alır, bunu JS ile gösteriyoruz.
-  document.getElementById('pod-id').innerText = window.location.hostname || "Local-Dev";
-
-  // 2. Saat ve Tarih (Vianen Formatı)
+  // 1. Saat ve Tarih
   setInterval(() => {
     document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR', { 
       day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' 
     });
   }, 1000);
 
-  // 3. PostgreSQL Lab Verilerini Çek
+  // 2. PostgreSQL Lab Verilerini Çek
   async function fetchLabData() {
     try {
       const res = await fetch('http://192.168.6.230:5000/data');
@@ -126,50 +116,47 @@
         document.getElementById('db-hum').firstChild.textContent = data.humidity;
         document.getElementById('db-update-time').innerText = "Son DB Güncelleme: " + data.ts;
       }
-    } catch (e) {
-      console.error("DB API Hatası");
-    }
+    } catch (e) { console.error("DB API Hatası"); }
   }
   setInterval(fetchLabData, 5000);
   fetchLabData();
 
-  // 4. Vianen Detaylı Hava Durumu Grafiği (Eski Profesyonel Stil)
+  // 3. Vianen Grafiği
   async function drawChart() {
-    const url = 'https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto';
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    const labels = data.hourly.time.slice(0, 24).map(t => t.split('T')[1].slice(0,5));
-    const temps = data.hourly.temperature_2m.slice(0, 24);
+    try {
+        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
+        const data = await response.json();
+        const labels = data.hourly.time.slice(0, 24).map(t => t.split('T')[1].slice(0,5));
+        const temps = data.hourly.temperature_2m.slice(0, 24);
 
-    new Chart(document.getElementById('weatherChart'), {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Sıcaklık (°C)',
-          data: temps,
-          borderColor: '#fce300',
-          backgroundColor: 'rgba(252, 227, 0, 0.1)',
-          fill: true,
-          tension: 0.4,
-          borderWidth: 3,
-          pointRadius: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-        }
-      }
-    });
+        new Chart(document.getElementById('weatherChart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Sıcaklık (°C)',
+              data: temps,
+              borderColor: '#fce300',
+              backgroundColor: 'rgba(252, 227, 0, 0.1)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } },
+              y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+          }
+        });
+    } catch (e) { console.error("Hava durumu çekilemedi"); }
   }
   drawChart();
 </script>
-
 </body>
 </html>
