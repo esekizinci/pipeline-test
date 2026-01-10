@@ -2,111 +2,125 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Eser Sekizinci • Lab Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Eser Sekizinci • Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg1: #071a2b; --bg2: #0c2a4a;
-      --card: rgba(255, 255, 255, 0.07);
+      --card: rgba(255, 255, 255, 0.08);
       --accent: #fce300; --text: #ffffff;
       --muted: rgba(255, 255, 255, 0.6);
-      --border: rgba(255, 255, 255, 0.12);
+      --border: rgba(255, 255, 255, 0.15);
     }
     body {
       margin: 0; min-height: 100vh;
-      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: linear-gradient(180deg, var(--bg1), var(--bg2));
-      color: var(--text); display: flex; justify-content: center; padding: 24px 16px;
+      color: var(--text); padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+      display: flex; justify-content: center;
     }
-    .wrap { width: 100%; max-width: 960px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-    .title { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
-    .subtitle { font-size: 14px; color: var(--muted); margin: 4px 0 0 0; }
+    .wrap { width: 100%; max-width: 960px; padding-top: 20px; }
+    
+    /* iPhone için Header Düzenlemesi */
+    .header { margin-bottom: 24px; padding: 0 4px; }
+    .title { font-size: clamp(20px, 6vw, 28px); font-weight: 800; margin: 0; }
+    .subtitle { font-size: 13px; color: var(--muted); margin-top: 5px; }
 
-    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
-    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+    /* Mobil Uyumlu Grid */
+    .grid { 
+      display: grid; 
+      grid-template-columns: 1.2fr 0.8fr; 
+      gap: 16px; 
+    }
+
+    /* Tablet ve Telefonlar için Tek Sütun */
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .big-val { font-size: 36px !important; }
+    }
 
     .card {
       background: var(--card); border: 1px solid var(--border);
-      border-radius: 18px; backdrop-filter: blur(15px); padding: 20px;
+      border-radius: 22px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 20px; position: relative;
     }
-    .card-label { text-transform: uppercase; font-size: 11px; letter-spacing: 1.5px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
+    .card-label { text-transform: capitalize; font-size: 10px; letter-spacing: 1.2px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
     
-    .sensor-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-    .big-val { font-size: 42px; font-weight: 800; color: var(--text); }
-    .big-val span { font-size: 18px; color: var(--muted); margin-left: 4px; }
+    .sensor-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
+    .sensor-item { flex: 1; }
+    .big-val { font-size: 42px; font-weight: 800; color: var(--text); display: flex; align-items: baseline; }
+    .big-val span { font-size: 16px; color: var(--muted); margin-left: 4px; }
 
-    .chart-box { background: rgba(0, 0, 0, 0.2); border-radius: 14px; padding: 12px; border: 1px solid var(--border); margin-top: 10px; }
-
-    .badge-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
-    .badge {
-      background: rgba(255, 255, 255, 0.08); padding: 6px 14px; border-radius: 99px;
-      font-size: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+    .chart-box { 
+      background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 10px; 
+      border: 1px solid var(--border); margin-top: 10px; height: 220px; 
     }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; box-shadow: 0 0 8px #3ddc97; }
-    .mono { font-family: monospace; font-weight: 700; color: var(--accent); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-bottom: 40px; }
+    .badge {
+      background: rgba(255, 255, 255, 0.08); padding: 6px 12px; border-radius: 12px;
+      font-size: 11px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px;
+    }
+    .mono { font-family: ui-monospace, SFMono-Regular, monospace; font-weight: 700; color: var(--accent); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; }
   </style>
 </head>
 <body>
 
 <div class="wrap">
   <div class="header">
-    <div>
-      <h1 class="title">Sekizinci Palas</h1>
-      <p class="subtitle" id="live-clock">Yükleniyor...</p>
-    </div>
-    <div class="badge"><span class="dot"></span> Sistem Online</div>
+    <h1 class="title">Lab Dashboard</h1>
+    <p class="subtitle" id="live-clock">Yükleniyor...</p>
   </div>
 
   <div class="grid">
     <div class="card">
-      <div class="card-label">Vianen, NL • 24 Saatlik Beklenen Hava Durumu</div>
+      <div class="card-label">Vianen Trend</div>
       <div class="chart-box">
-        <canvas id="weatherChart" style="height: 280px;"></canvas>
+        <canvas id="weatherChart"></canvas>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-label">Lab Sensörleri</div>
-      
+      <div class="card-label">PostgreSQL Live</div>
       <div class="sensor-row">
-        <div>
-          <div style="font-size: 12px; color: var(--muted);">Sıcaklık</div>
+        <div class="sensor-item">
+          <div style="font-size: 11px; color: var(--muted);">Sıcaklık</div>
           <div class="big-val" id="db-temp">--<span>°C</span></div>
         </div>
-        <div>
-          <div style="font-size: 12px; color: var(--muted);">Nem</div>
+        <div class="sensor-item">
+          <div style="font-size: 11px; color: var(--muted);">Nem</div>
           <div class="big-val" id="db-hum">--<span>%</span></div>
         </div>
       </div>
 
-      <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border);">
-        <div class="card-label">Runtime Bilgisi</div>
-        <div style="font-size: 13px; margin-bottom: 8px;">
-          <span style="color: var(--muted);">Served by Pod:</span> 
-          <span class="mono" id="pod-id">__POD_NAME__</span>
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
+        <div class="card-label">Pod Info</div>
+        <div style="font-size: 12px;">
+          <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
         </div>
-        <div style="font-size: 11px; color: var(--muted);" id="db-update-time">DB verisi bekleniyor...</div>
+        <div style="font-size: 10px; color: var(--muted); margin-top:8px;" id="db-update-time">--</div>
       </div>
     </div>
   </div>
 
   <div class="badge-row">
-    <div class="badge">Endpoint: <span class="mono">argocd.ccie.lab</span></div>
-    <div class="badge">Region: <span class="mono">Vianen / Utrecht</span></div>
+    <div class="badge"><span class="dot"></span> Online</div>
+    <div class="badge">IP: <span class="mono">192.168.6.230</span></div>
+    <div class="badge">Loc: <span class="mono">Vianen</span></div>
   </div>
 </div>
 
 <script>
-  // 1. Saat ve Tarih
+  // Saat
   setInterval(() => {
     document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR', { 
-      day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' 
+      hour: '2-digit', minute: '2-digit', second: '2-digit' 
     });
   }, 1000);
 
-  // 2. PostgreSQL Lab Verilerini Çek
+  // DB Data
   async function fetchLabData() {
     try {
       const res = await fetch('http://192.168.6.230:5000/data');
@@ -114,47 +128,40 @@
       if(data.temperature) {
         document.getElementById('db-temp').firstChild.textContent = data.temperature;
         document.getElementById('db-hum').firstChild.textContent = data.humidity;
-        document.getElementById('db-update-time').innerText = "Son DB Güncelleme: " + data.ts;
+        document.getElementById('db-update-time').innerText = "Son Kayıt: " + data.ts;
       }
-    } catch (e) { console.error("DB API Hatası"); }
+    } catch (e) { console.error("API Offline"); }
   }
   setInterval(fetchLabData, 5000);
   fetchLabData();
 
-  // 3. Vianen Grafiği
+  // Grafik
   async function drawChart() {
-    try {
-        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
-        const data = await response.json();
-        const labels = data.hourly.time.slice(0, 24).map(t => t.split('T')[1].slice(0,5));
-        const temps = data.hourly.temperature_2m.slice(0, 24);
+    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
+    const data = await response.json();
+    const labels = data.hourly.time.slice(0, 12).map(t => t.split('T')[1].slice(0,5)); // Mobilde 12 saat daha iyi durur
+    const temps = data.hourly.temperature_2m.slice(0, 12);
 
-        new Chart(document.getElementById('weatherChart'), {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Sıcaklık (°C)',
-              data: temps,
-              borderColor: '#fce300',
-              backgroundColor: 'rgba(252, 227, 0, 0.1)',
-              fill: true,
-              tension: 0.4,
-              borderWidth: 3,
-              pointRadius: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } },
-              y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-            }
-          }
-        });
-    } catch (e) { console.error("Hava durumu çekilemedi"); }
+    new Chart(document.getElementById('weatherChart'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: temps,
+          borderColor: '#fce300',
+          backgroundColor: 'rgba(252, 227, 0, 0.1)',
+          fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }, grid: { display: false } },
+          y: { display: false }
+        }
+      }
+    });
   }
   drawChart();
 </script>
