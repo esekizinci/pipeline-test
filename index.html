@@ -51,22 +51,18 @@
     .btn-on:hover { background: var(--success); color: #000; }
     .btn-off:hover { background: var(--danger); }
 
-    /* --- TO-DO SECTİON STYLES --- */
+    /* TO-DO STYLES */
     .todo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
     .todo-input-row { 
         grid-column: 1 / -1; display: flex; gap: 10px; 
         background: var(--card); padding: 8px; border-radius: 16px; border: 1px solid var(--border);
     }
-    .todo-input-row input {
-        flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 14px;
-    }
+    .todo-input-row input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 14px; }
     .add-btn { background: var(--accent); color: #000; border: none; padding: 0 20px; border-radius: 12px; font-weight: 800; cursor: pointer; }
     .todo-list { list-style: none; padding: 0; margin: 0; }
     .todo-item {
-        background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-        padding: 10px 14px; border-radius: 12px; margin-bottom: 8px;
-        display: flex; justify-content: space-between; align-items: center; font-size: 13px;
-        transition: 0.2s; border-left: 4px solid var(--accent);
+        background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px; margin-bottom: 8px;
+        display: flex; justify-content: space-between; align-items: center; font-size: 13px; border-left: 4px solid var(--accent);
     }
     .todo-item.done { border-left-color: var(--success); opacity: 0.5; text-decoration: line-through; }
     .todo-item span { cursor: pointer; flex: 1; }
@@ -99,9 +95,18 @@
         <div><div style="font-size:11px; color:var(--muted)">Sıcaklık</div><div class="big-val" id="db-temp">--<span>°C</span></div></div>
         <div><div style="font-size:11px; color:var(--muted)">Nem</div><div class="big-val" id="db-hum">--<span>%</span></div></div>
       </div>
+      
       <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border);">
         <div class="card-label">Vantilatör Kontrol</div>
         <div style="display:flex; gap:10px;"><button class="btn btn-on" onclick="controlFan('AC')">Fan Aç</button><button class="btn btn-off" onclick="controlFan('KAPAT')">Kapat</button></div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
+        <div class="card-label">Anlık POD Bilgisi</div>
+        <div style="font-size: 12px;">
+          <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
+        </div>
+        <div style="font-size: 10px; color: var(--muted); margin-top:8px;" id="db-update-time">--</div>
       </div>
     </div>
   </div>
@@ -112,7 +117,7 @@
         <button class="add-btn" onclick="addTodo()">EKLE</button>
     </div>
     <div class="card">
-        <div class="card-label"><span class="dot" style="background:var(--accent)"></span> Madde Madde Yapılacaklar</div>
+        <div class="card-label"><span class="dot" style="background:var(--accent)"></span> Yapılacaklar</div>
         <ul id="pendingList" class="todo-list"></ul>
     </div>
     <div class="card">
@@ -130,7 +135,7 @@
 </div>
 
 <script>
-  // TO-DO LOGIC
+  // TO-DO LOGIC (LocalStorage tabanlı)
   let todos = JSON.parse(localStorage.getItem('palas_tasks')) || [];
   function renderTodos() {
       const pList = document.getElementById('pendingList');
@@ -152,11 +157,12 @@
   function delTodo(i) { todos.splice(i, 1); renderTodos(); }
   renderTodos();
 
-  // FAN & CLOCK & WEATHER (EXISTING CODE)
+  // API & DASHBOARD LOGIC
   async function controlFan(a) {
-    try { await fetch(`http://192.168.6.230:5000/control/${a}`); } catch(e) { alert("Bağlantı Yok"); }
+    try { await fetch(`http://192.168.6.230:5000/control/${a}`); } catch(e) { console.error("Fan API Hatası"); }
   }
   setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR'); }, 1000);
+  
   async function fetchLabData() {
     try {
       const res = await fetch('http://192.168.6.230:5000/data');
@@ -164,6 +170,7 @@
       if(d.temperature) {
         document.getElementById('db-temp').firstChild.textContent = d.temperature;
         document.getElementById('db-hum').firstChild.textContent = d.humidity;
+        document.getElementById('db-update-time').innerText = "Son Kayıt: " + d.ts;
       }
     } catch (e) {}
   }
