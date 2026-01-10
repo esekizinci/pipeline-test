@@ -1,10 +1,16 @@
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Intranet by Sekizinci</title>
+
+  <!-- Tüm sayfayı 5 dakikada bir yenile -->
+  <meta http-equiv="refresh" content="300">
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     :root {
       --bg1: #071a2b; --bg2: #0c2a4a;
@@ -18,7 +24,8 @@
       margin: 0; min-height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: linear-gradient(180deg, var(--bg1), var(--bg2));
-      color: var(--text); padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+      color: var(--text);
+      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
       display: flex; justify-content: center;
     }
     .wrap { width: 100%; max-width: 960px; padding-top: 20px; }
@@ -34,13 +41,20 @@
       border-radius: 22px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       padding: 20px; position: relative;
     }
-    .card-label { text-transform: uppercase; font-size: 11px; letter-spacing: 1.2px; color: var(--accent); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    
+    .card-label {
+      text-transform: uppercase; font-size: 11px; letter-spacing: 1.2px;
+      color: var(--accent); font-weight: 700; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
     .sensor-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
     .big-val { font-size: 42px; font-weight: 800; color: var(--text); display: flex; align-items: baseline; }
     .big-val span { font-size: 16px; color: var(--muted); margin-left: 4px; }
 
-    .chart-box { background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 10px; border: 1px solid var(--border); margin-top: 10px; height: 220px; }
+    .chart-box {
+      background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 10px;
+      border: 1px solid var(--border); margin-top: 10px; height: 220px;
+    }
 
     .btn {
       flex: 1; border: 1px solid var(--border); background: rgba(255,255,255,0.05);
@@ -51,205 +65,239 @@
     .btn-on:hover { background: var(--success); color: #000; }
     .btn-off:hover { background: var(--danger); }
 
-    /* TO-DO STYLES */
+    /* TO-DO */
     .todo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
-    .todo-input-row { 
-        grid-column: 1 / -1; display: flex; gap: 10px; 
-        background: var(--card); padding: 8px; border-radius: 16px; border: 1px solid var(--border);
+    .todo-input-row {
+      grid-column: 1 / -1; display: flex; gap: 10px;
+      background: var(--card); padding: 8px; border-radius: 16px; border: 1px solid var(--border);
     }
-    .todo-input-row input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 14px; }
-    .add-btn { background: var(--accent); color: #000; border: none; padding: 0 20px; border-radius: 12px; font-weight: 800; cursor: pointer; }
+    .todo-input-row input {
+      flex: 1; background: transparent; border: none; color: white;
+      padding: 10px; outline: none; font-size: 14px;
+    }
+    .add-btn {
+      background: var(--accent); color: #000; border: none;
+      padding: 0 20px; border-radius: 12px; font-weight: 800; cursor: pointer;
+    }
     .todo-list { list-style: none; padding: 0; margin: 0; }
     .todo-item {
-        background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px; margin-bottom: 8px;
-        display: flex; justify-content: space-between; align-items: center; font-size: 13px; border-left: 4px solid var(--accent);
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      padding: 10px 14px; border-radius: 12px; margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; border-left: 4px solid var(--accent);
     }
     .todo-item.done { border-left-color: var(--success); opacity: 0.5; text-decoration: line-through; }
     .todo-item span { cursor: pointer; flex: 1; }
-    .del-btn { color: var(--danger); background: none; border: none; font-size: 18px; cursor: pointer; padding-left: 10px; }
+    .del-btn {
+      color: var(--danger); background: none; border: none;
+      font-size: 18px; cursor: pointer; padding-left: 10px;
+    }
     @media (max-width: 600px) { .todo-grid { grid-template-columns: 1fr; } }
 
     .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-bottom: 40px; }
-    .badge { background: rgba(255, 255, 255, 0.08); padding: 6px 12px; border-radius: 12px; font-size: 11px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+    .badge {
+      background: rgba(255, 255, 255, 0.08); padding: 6px 12px;
+      border-radius: 12px; font-size: 11px; border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 6px;
+    }
     .mono { font-family: ui-monospace, monospace; font-weight: 700; color: var(--accent); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; }
   </style>
 </head>
+
 <body>
-
-<div class="wrap">
-  <div class="header">
-    <h1 class="title">Intranet Portal by Sekizinci</h1>
-    <p class="subtitle" id="live-clock">Yükleniyor...</p>
-  </div>
-
-  <div class="grid">
-    <div class="card">
-      <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu</div>
-      <div class="chart-box"><canvas id="weatherChart"></canvas></div>
+  <div class="wrap">
+    <div class="header">
+      <h1 class="title">Intranet Portal by Sekizinci</h1>
+      <p class="subtitle" id="live-clock">Yükleniyor...</p>
     </div>
 
-    <div class="card">
-      <div class="card-label">Sistem Odası İklimlendirme</div>
-      <div class="sensor-row">
-        <div><div style="font-size:11px; color:var(--muted)">Sıcaklık</div><div class="big-val" id="db-temp">--<span>°C</span></div></div>
-        <div><div style="font-size:11px; color:var(--muted)">Nem</div><div class="big-val" id="db-hum">--<span>%</span></div></div>
-      </div>
-      
-      <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border);">
-        <div class="card-label">Vantilatör Kontrol</div>
-        <div style="display:flex; gap:10px;"><button class="btn btn-on" onclick="controlFan('AC')">Fan Aç</button><button class="btn btn-off" onclick="controlFan('KAPAT')">Kapat</button></div>
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu</div>
+        <div class="chart-box"><canvas id="weatherChart"></canvas></div>
       </div>
 
-      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
-        <div class="card-label">Anlık POD Bilgisi</div>
-        <div style="font-size: 12px;">
-          <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
+      <div class="card">
+        <div class="card-label">Sistem Odası İklimlendirme</div>
+        <div class="sensor-row">
+          <div>
+            <div style="font-size:11px; color:var(--muted)">Sıcaklık</div>
+            <div class="big-val" id="db-temp">--<span>°C</span></div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:var(--muted)">Nem</div>
+            <div class="big-val" id="db-hum">--<span>%</span></div>
+          </div>
         </div>
-        <div style="font-size: 10px; color: var(--muted); margin-top:8px;" id="db-update-time">--</div>
+
+        <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border);">
+          <div class="card-label">Vantilatör Kontrol</div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-on" onclick="controlFan('AC')">Fan Aç</button>
+            <button class="btn btn-off" onclick="controlFan('KAPAT')">Kapat</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
+          <div class="card-label">Anlık POD Bilgisi</div>
+          <div style="font-size: 12px;">
+            <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
+          </div>
+          <div style="font-size: 10px; color: var(--muted); margin-top:8px;" id="db-update-time">--</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="todo-grid">
-    <div class="todo-input-row">
+    <div class="todo-grid">
+      <div class="todo-input-row">
         <input type="text" id="todoInput" placeholder="Yeni bir iş ekle..." onkeypress="if(event.key==='Enter') addTodo()">
         <button class="add-btn" onclick="addTodo()">EKLE</button>
-    </div>
-    <div class="card">
+      </div>
+      <div class="card">
         <div class="card-label"><span class="dot" style="background:var(--accent)"></span> Yapılacaklar</div>
         <ul id="pendingList" class="todo-list"></ul>
-    </div>
-    <div class="card">
+      </div>
+      <div class="card">
         <div class="card-label"><span class="dot" style="background:var(--success)"></span> Yapılanlar</div>
         <ul id="doneList" class="todo-list"></ul>
+      </div>
+    </div>
+
+    <div class="badge-row">
+      <div class="badge"><span class="dot"></span> Online</div>
+      <div class="badge">Gateway: <span class="mono">192.168.6.230</span></div>
+      <div class="badge">Konum: <span class="mono" id="geo-pos">Vianen</span></div>
+      <div class="badge">TZ: <span class="mono" id="geo-tz">--</span></div>
     </div>
   </div>
 
-  <div class="badge-row">
-    <div class="badge"><span class="dot"></span> Online</div>
-    <div class="badge">Gateway: <span class="mono">192.168.6.230</span></div>
-    <div class="badge">Konum: <span class="mono" id="geo-pos">Vianen</span></div>
-    <div class="badge">TZ: <span class="mono" id="geo-tz">--</span></div>
-  </div>
-</div>
+  <script>
+    // -------- TO-DO (LocalStorage) --------
+    let todos = JSON.parse(localStorage.getItem('palas_tasks')) || [];
 
-<script>
-  // TO-DO LOGIC (LocalStorage tabanlı)
-  let todos = JSON.parse(localStorage.getItem('palas_tasks')) || [];
-  function renderTodos() {
+    function renderTodos() {
       const pList = document.getElementById('pendingList');
       const dList = document.getElementById('doneList');
-      pList.innerHTML = ''; dList.innerHTML = '';
+      pList.innerHTML = '';
+      dList.innerHTML = '';
+
       todos.forEach((t, i) => {
-          const li = document.createElement('li');
-          li.className = `todo-item ${t.done ? 'done' : ''}`;
-          li.innerHTML = `<span onclick="toggleTodo(${i})">${t.text}</span><button class="del-btn" onclick="delTodo(${i})">×</button>`;
-          if(t.done) dList.appendChild(li); else pList.appendChild(li);
+        const li = document.createElement('li');
+        li.className = `todo-item ${t.done ? 'done' : ''}`;
+        li.innerHTML = `<span onclick="toggleTodo(${i})">${t.text}</span><button class="del-btn" onclick="delTodo(${i})">×</button>`;
+        if (t.done) dList.appendChild(li);
+        else pList.appendChild(li);
       });
+
       localStorage.setItem('palas_tasks', JSON.stringify(todos));
-  }
-  function addTodo() {
-      const input = document.getElementById('todoInput');
-      if(input.value.trim()) { todos.push({text: input.value, done: false}); input.value = ''; renderTodos(); }
-  }
-  function toggleTodo(i) { todos[i].done = !todos[i].done; renderTodos(); }
-  function delTodo(i) { todos.splice(i, 1); renderTodos(); }
-  renderTodos();
-
-  // API & DASHBOARD LOGIC
-  async function controlFan(a) {
-    try { await fetch(`http://192.168.6.230:5000/control/${a}`); } catch(e) { console.error("Fan API Hatası"); }
-  }
-  setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR'); }, 1000);
-  
-  async function fetchLabData() {
-    try {
-      const res = await fetch('http://192.168.6.230:5000/data');
-      const d = await res.json();
-      if(d.temperature) {
-        document.getElementById('db-temp').firstChild.textContent = d.temperature;
-        document.getElementById('db-hum').firstChild.textContent = d.humidity;
-        document.getElementById('db-update-time').innerText = "Son Kayıt: " + d.ts;
-      }
-    } catch (e) {}
-  }
-  setInterval(fetchLabData, 5000); fetchLabData();
-
-  let weatherChart; // chart instance
-
-  function pad2(n){ return String(n).padStart(2,'0'); }
-
-  // Browser'ın yerel saatine göre "YYYY-MM-DDTHH:00" üretir (Europe/Amsterdam ile uyumlu)
-  function localHourKey(d){
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:00`;
-  }
-
-  async function drawChart() {
-    const res = await fetch(
-      'https://api.open-meteo.com/v1/forecast' +
-      '?latitude=51.98&longitude=5.10' +
-      '&hourly=temperature_2m' +
-      '&timezone=Europe%2FAmsterdam'
-    );
-    const d = await res.json();
-
-    // Ekrandaki meta alanlar
-    document.getElementById('geo-pos').innerText = d.latitude + "N, " + d.longitude + "E";
-    document.getElementById('geo-tz').innerText = d.timezone_abbreviation || 'CET/CEST';
-
-    const times = d.hourly.time;              // "YYYY-MM-DDTHH:00"
-    const temps = d.hourly.temperature_2m;
-
-    // "Şu an" için en yakın saat slotunu bul
-    const now = new Date();
-    const key = localHourKey(now);
-
-    let startIdx = times.indexOf(key);
-
-    // exact match yoksa: "şu an"dan sonraki ilk saati bul
-    if (startIdx === -1) {
-      // times stringleri kronolojik; lexicographic karşılaştırma ISO formatta çalışır
-      startIdx = times.findIndex(t => t >= key);
-      if (startIdx === -1) startIdx = Math.max(0, times.length - 12); // fallback
     }
 
-    const horizon = 12; // kaç saat göstereceksin
-    const sliceTimes = times.slice(startIdx, startIdx + horizon);
-    const sliceTemps = temps.slice(startIdx, startIdx + horizon);
-
-    const labels = sliceTimes.map(t => t.split('T')[1].slice(0,5));
-
-    // Chart yeniden çizilirken eskisini temizle
-    if (weatherChart) weatherChart.destroy();
-
-    weatherChart = new Chart(document.getElementById('weatherChart'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Temp',
-          data: sliceTemps,
-          borderColor: '#fce300',
-          fill: true,
-          backgroundColor: 'rgba(252,227,0,0.1)',
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: 'rgba(255,255,255,0.4)' } },
-          y: { ticks: { color: 'rgba(255,255,255,0.2)' } }
-        }
+    function addTodo() {
+      const input = document.getElementById('todoInput');
+      if (input.value.trim()) {
+        todos.push({ text: input.value, done: false });
+        input.value = '';
+        renderTodos();
       }
-    });
-  }
-// İstersen hava grafiğini periyodik güncelle:
-setInterval(drawChart, 10 * 60 * 1000); // 10 dk
-drawChart();
-</script>
+    }
+
+    function toggleTodo(i) { todos[i].done = !todos[i].done; renderTodos(); }
+    function delTodo(i) { todos.splice(i, 1); renderTodos(); }
+    renderTodos();
+
+    // -------- FAN API --------
+    async function controlFan(a) {
+      try { await fetch(`http://192.168.6.230:5000/control/${a}`); }
+      catch (e) { console.error("Fan API Hatası"); }
+    }
+
+    // -------- LIVE CLOCK (1sn) --------
+    setInterval(() => {
+      document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR');
+    }, 1000);
+
+    // -------- LAB DATA (5sn) --------
+    async function fetchLabData() {
+      try {
+        const res = await fetch('http://192.168.6.230:5000/data');
+        const d = await res.json();
+        if (d.temperature) {
+          document.getElementById('db-temp').firstChild.textContent = d.temperature;
+          document.getElementById('db-hum').firstChild.textContent = d.humidity;
+          document.getElementById('db-update-time').innerText = "Son Kayıt: " + d.ts;
+        }
+      } catch (e) {}
+    }
+    setInterval(fetchLabData, 5000);
+    fetchLabData();
+
+    // -------- WEATHER CHART (Sadece ilk yüklemede çizilecek; sayfa zaten 5 dk'da bir refresh) --------
+    let weatherChart;
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function localHourKey(dt) {
+      return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}T${pad2(dt.getHours())}:00`;
+    }
+
+    async function drawChart() {
+      const res = await fetch(
+        'https://api.open-meteo.com/v1/forecast' +
+        '?latitude=51.98&longitude=5.10' +
+        '&hourly=temperature_2m' +
+        '&timezone=Europe%2FAmsterdam'
+      );
+      const d = await res.json();
+
+      document.getElementById('geo-pos').innerText = d.latitude + "N, " + d.longitude + "E";
+      document.getElementById('geo-tz').innerText = d.timezone_abbreviation || 'CET/CEST';
+
+      const times = d.hourly.time;
+      const temps = d.hourly.temperature_2m;
+
+      const now = new Date();
+      const key = localHourKey(now);
+
+      let startIdx = times.indexOf(key);
+      if (startIdx === -1) {
+        startIdx = times.findIndex(t => t >= key);
+        if (startIdx === -1) startIdx = Math.max(0, times.length - 12);
+      }
+
+      const horizon = 12;
+      const sliceTimes = times.slice(startIdx, startIdx + horizon);
+      const sliceTemps = temps.slice(startIdx, startIdx + horizon);
+      const labels = sliceTimes.map(t => t.split('T')[1].slice(0, 5));
+
+      if (weatherChart) weatherChart.destroy();
+
+      weatherChart = new Chart(document.getElementById('weatherChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Temp',
+            data: sliceTemps,
+            borderColor: '#fce300',
+            fill: true,
+            backgroundColor: 'rgba(252,227,0,0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: 'rgba(255,255,255,0.4)' } },
+            y: { ticks: { color: 'rgba(255,255,255,0.2)' } }
+          }
+        }
+      });
+    }
+
+    drawChart();
+  </script>
 </body>
 </html>
+```
