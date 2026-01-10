@@ -176,21 +176,80 @@
   }
   setInterval(fetchLabData, 5000); fetchLabData();
 
+  let weatherChart; // chart instance
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  // Browser'ın yerel saatine göre "YYYY-MM-DDTHH:00" üretir (Europe/Amsterdam ile uyumlu)
+  function localHourKey(d){
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:00`;
+  }
+
   async function drawChart() {
-    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
+    const res = await fetch(
+      'https://api.open-meteo.com/v1/forecast' +
+      '?latitude=51.98&longitude=5.10' +
+      '&hourly=temperature_2m' +
+      '&timezone=Europe%2FAmsterdam'
+    );
     const d = await res.json();
+
+    // Ekrandaki meta alanlar
     document.getElementById('geo-pos').innerText = d.latitude + "N, " + d.longitude + "E";
-    document.getElementById('geo-tz').innerText = d.timezone_abbreviation;
-    new Chart(document.getElementById('weatherChart'), {
+    document.getElementById('geo-tz').innerText = d.timezone_abbreviation || 'CET/CEST';
+
+    const times = d.hourly.time;              // "YYYY-MM-DDTHH:00"
+    const temps = d.hourly.temperature_2m;
+
+    // "Şu an" için en yakın saat slotunu bul
+    const now = new Date();
+    const key = localHourKey(now);
+
+    let startIdx = times.indexOf(key);
+
+    // exact match yoksa: "şu an"dan sonraki ilk saati bul
+    if (startIdx === -1) {
+      // times stringleri kronolojik; lexicographic karşılaştırma ISO formatta çalışır
+      startIdx = times.findIndex(t => t >= key);
+      if (startIdx === -1) startIdx = Math.max(0, times.length - 12); // fallback
+    }
+
+    const horizon = 12; // kaç saat göstereceksin
+    const sliceTimes = times.slice(startIdx, startIdx + horizon);
+    const sliceTemps = temps.slice(startIdx, startIdx + horizon);
+
+    const labels = sliceTimes.map(t => t.split('T')[1].slice(0,5));
+
+    // Chart yeniden çizilirken eskisini temizle
+    if (weatherChart) weatherChart.destroy();
+
+    weatherChart = new Chart(document.getElementById('weatherChart'), {
       type: 'line',
       data: {
-        labels: d.hourly.time.slice(0, 12).map(t => t.split('T')[1].slice(0,5)),
-        datasets: [{ label: 'Temp', data: d.hourly.temperature_2m.slice(0,12), borderColor: '#fce300', fill: true, backgroundColor: 'rgba(252,227,0,0.1)', tension: 0.4 }]
+        labels,
+        datasets: [{
+          label: 'Temp',
+          data: sliceTemps,
+          borderColor: '#fce300',
+          fill: true,
+          backgroundColor: 'rgba(252,227,0,0.1)',
+          tension: 0.4
+        }]
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)' } }, y: { ticks: { color: 'rgba(255,255,255,0.2)' } } } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: 'rgba(255,255,255,0.4)' } },
+          y: { ticks: { color: 'rgba(255,255,255,0.2)' } }
+        }
+      }
     });
   }
-  drawChart();
+// İstersen hava grafiğini periyodik güncelle:
+setInterval(drawChart, 10 * 60 * 1000); // 10 dk
+drawChart();
 </script>
 </body>
 </html>
