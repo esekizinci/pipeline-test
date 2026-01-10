@@ -133,12 +133,11 @@
   setInterval(fetchLabData, 5000);
   fetchLabData();
 
-  // Grafik ve Dinamik Konum Bilgileri
+// Grafik ve Dinamik Konum Bilgileri
   async function drawChart() {
     const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
     const data = await response.json();
     
-    // Dinamik Badge Güncellemeleri
     document.getElementById('geo-pos').innerText = data.latitude + "°N, " + data.longitude + "°E";
     document.getElementById('geo-tz').innerText = data.timezone_abbreviation;
 
@@ -150,18 +149,44 @@
       data: {
         labels: labels,
         datasets: [{
+          label: 'Sıcaklık',
           data: temps,
           borderColor: '#fce300',
           backgroundColor: 'rgba(252, 227, 0, 0.1)',
-          fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0
+          fill: true, tension: 0.4, borderWidth: 3, 
+          pointRadius: 4, // Noktaları görünür yaptık ki dokunması kolay olsun
+          pointHoverRadius: 8,
+          pointBackgroundColor: '#fce300'
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        interaction: {
+          intersect: false,
+          mode: 'index',
+        },
+        plugins: { 
+          legend: { display: false },
+          tooltip: {
+            enabled: true, // Bilgi kutucuğunu açtık
+            backgroundColor: 'rgba(7, 26, 43, 0.9)',
+            titleColor: '#fce300',
+            bodyColor: '#fff',
+            displayColors: false,
+            callbacks: {
+              label: function(context) {
+                return context.parsed.y + ' °C';
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }, grid: { display: false } },
-          y: { display: false }
+          y: { 
+            display: true, // Değerlerin kaç olduğunu anlamak için Y eksenini hafifçe açtık
+            ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          }
         }
       }
     });
