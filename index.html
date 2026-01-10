@@ -12,6 +12,7 @@
       --accent: #fce300; --text: #ffffff;
       --muted: rgba(255, 255, 255, 0.6);
       --border: rgba(255, 255, 255, 0.15);
+      --success: #3ddc97; --danger: #ff4d4d;
     }
     body {
       margin: 0; min-height: 100vh;
@@ -54,6 +55,19 @@
       border: 1px solid var(--border); margin-top: 10px; height: 220px; 
     }
 
+    /* KONTROL BUTONLARI STİLLERİ */
+    .control-row { display: flex; gap: 10px; margin-top: 15px; }
+    .btn {
+      flex: 1; border: 1px solid var(--border); background: rgba(255,255,255,0.05);
+      color: var(--text); padding: 12px; border-radius: 14px; font-weight: 700;
+      font-size: 12px; cursor: pointer; transition: all 0.2s ease;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-on:hover { background: var(--success); color: #000; border-color: var(--success); }
+    .btn-off:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-loading { opacity: 0.5; pointer-events: none; }
+
     .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-bottom: 40px; }
     .badge {
       background: rgba(255, 255, 255, 0.08); padding: 6px 12px; border-radius: 12px;
@@ -93,9 +107,17 @@
       </div>
 
       <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
+        <div class="card-label">Vantilatör Kontrol</div>
+        <div class="control-row">
+          <button class="btn btn-on" onclick="controlFan('AC')">Fan Aç</button>
+          <button class="btn btn-off" onclick="controlFan('KAPAT')">Kapat</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
         <div class="card-label">Anlık POD Bilgisi</div>
         <div style="font-size: 12px;">
-          <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
+          <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">Sekizinci-Node-Red-Rpi3</span>
         </div>
         <div style="font-size: 10px; color: var(--muted); margin-top:8px;" id="db-update-time">--</div>
       </div>
@@ -111,6 +133,26 @@
 </div>
 
 <script>
+  // Fan Kontrol Fonksiyonu
+  async function controlFan(action) {
+    const btns = document.querySelectorAll('.btn');
+    btns.forEach(b => b.classList.add('btn-loading'));
+    
+    try {
+      const res = await fetch(`http://192.168.6.230:5000/control/${action}`);
+      const data = await res.json();
+      if(data.status === "success") {
+        console.log("İşlem Başarılı: " + action);
+      } else {
+        alert("Hata: " + data.error);
+      }
+    } catch (e) {
+      alert("API bağlantı hatası!");
+    } finally {
+      btns.forEach(b => b.classList.remove('btn-loading'));
+    }
+  }
+
   // Saat
   setInterval(() => {
     document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR', { 
@@ -133,7 +175,7 @@
   setInterval(fetchLabData, 5000);
   fetchLabData();
 
-// Grafik ve Dinamik Konum Bilgileri
+  // Grafik ve Dinamik Konum Bilgileri
   async function drawChart() {
     const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=auto');
     const data = await response.json();
@@ -154,39 +196,21 @@
           borderColor: '#fce300',
           backgroundColor: 'rgba(252, 227, 0, 0.1)',
           fill: true, tension: 0.4, borderWidth: 3, 
-          pointRadius: 4, // Noktaları görünür yaptık ki dokunması kolay olsun
+          pointRadius: 4,
           pointHoverRadius: 8,
           pointBackgroundColor: '#fce300'
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        interaction: {
-          intersect: false,
-          mode: 'index',
-        },
+        interaction: { intersect: false, mode: 'index' },
         plugins: { 
           legend: { display: false },
-          tooltip: {
-            enabled: true, // Bilgi kutucuğunu açtık
-            backgroundColor: 'rgba(7, 26, 43, 0.9)',
-            titleColor: '#fce300',
-            bodyColor: '#fff',
-            displayColors: false,
-            callbacks: {
-              label: function(context) {
-                return context.parsed.y + ' °C';
-              }
-            }
-          }
+          tooltip: { enabled: true }
         },
         scales: {
           x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }, grid: { display: false } },
-          y: { 
-            display: true, // Değerlerin kaç olduğunu anlamak için Y eksenini hafifçe açtık
-            ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10 } },
-            grid: { color: 'rgba(255,255,255,0.05)' }
-          }
+          y: { ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
         }
       }
     });
