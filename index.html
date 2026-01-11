@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Intranet by Sekizinci</title>
 
-  <!-- Tüm sayfayı 5 dakikada bir yenile -->
   <meta http-equiv="refresh" content="300">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -64,6 +63,13 @@
     .btn-on:hover { background: var(--success); color: #000; }
     .btn-off:hover { background: var(--danger); }
 
+    /* PING TABLOSU STİLLERİ */
+    .ping-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 12px; }
+    .ping-table tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .ping-table td { padding: 8px 4px; }
+    .status-up { color: var(--success); font-weight: bold; }
+    .status-down { color: var(--danger); font-weight: bold; }
+
     /* TO-DO */
     .todo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
     .todo-input-row {
@@ -112,9 +118,20 @@
     </div>
 
     <div class="grid">
-      <div class="card">
-        <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu</div>
-        <div class="chart-box"><canvas id="weatherChart"></canvas></div>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="card">
+          <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu</div>
+          <div class="chart-box"><canvas id="weatherChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-label"><span class="dot"></span> Ağ Cihazları Durumu (Zabbix)</div>
+          <table class="ping-table">
+            <tbody id="ping-body">
+              <tr><td colspan="3" style="color:var(--muted)">Yükleniyor...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="card">
@@ -231,9 +248,33 @@
     setInterval(fetchLabData, 5000);
     fetchLabData();
 
-    // -------- WEATHER CHART (Sadece ilk yüklemede çizilecek; sayfa zaten 5 dk'da bir refresh) --------
-    let weatherChart;
+    // -------- ZABBIX PING DATA (60sn) --------
+    async function fetchPingData() {
+      try {
+        const res = await fetch('http://192.168.6.230:5000/ping');
+        const data = await res.json();
+        const body = document.getElementById('ping-body');
+        body.innerHTML = '';
 
+        data.forEach(item => {
+          const row = document.createElement('tr');
+          const statusCls = item.status === 'UP' ? 'status-up' : 'status-down';
+          row.innerHTML = `
+            <td style="width:50%">${item.host}</td>
+            <td class="${statusCls}" style="width:25%">${item.status}</td>
+            <td style="width:25%; text-align:right; color:var(--muted)">${item.latency}</td>
+          `;
+          body.appendChild(row);
+        });
+      } catch (e) {
+        console.error("Ping API Hatası");
+      }
+    }
+    setInterval(fetchPingData, 60000);
+    fetchPingData();
+
+    // -------- WEATHER CHART --------
+    let weatherChart;
     function pad2(n) { return String(n).padStart(2, '0'); }
     function localHourKey(dt) {
       return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}T${pad2(dt.getHours())}:00`;
@@ -253,7 +294,6 @@
 
       const times = d.hourly.time;
       const temps = d.hourly.temperature_2m;
-
       const now = new Date();
       const key = localHourKey(now);
 
@@ -269,7 +309,6 @@
       const labels = sliceTimes.map(t => t.split('T')[1].slice(0, 5));
 
       if (weatherChart) weatherChart.destroy();
-
       weatherChart = new Chart(document.getElementById('weatherChart'), {
         type: 'line',
         data: {
@@ -294,7 +333,6 @@
         }
       });
     }
-
     drawChart();
   </script>
 </body>
