@@ -44,46 +44,32 @@
     }
 
     /* --- ÖZET PİNG TASARIMI --- */
-    .ping-summary-grid {
-      display: flex;
-      gap: 12px;
-      margin-top: 5px;
-    }
+    .ping-summary-grid { display: flex; gap: 12px; margin-top: 5px; }
     .summary-box {
-      flex: 1;
-      padding: 15px;
-      border-radius: 18px;
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      transition: all 0.3s ease;
+      flex: 1; padding: 15px; border-radius: 18px; border: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; transition: all 0.3s ease;
     }
-    .summary-up {
-      background: rgba(61, 220, 151, 0.1);
-      border-color: rgba(61, 220, 151, 0.3);
-      color: var(--success);
-    }
-    .summary-down {
-      background: rgba(255, 77, 77, 0.1);
-      border-color: rgba(255, 77, 77, 0.3);
-      color: var(--danger);
-    }
+    .summary-up { background: rgba(61, 220, 151, 0.1); border-color: rgba(61, 220, 151, 0.3); color: var(--success); }
+    .summary-down { background: rgba(255, 77, 77, 0.1); border-color: rgba(255, 77, 77, 0.3); color: var(--danger); }
     .summary-val { font-size: 24px; font-weight: 800; }
     .summary-label { font-size: 10px; text-transform: uppercase; opacity: 0.8; letter-spacing: 1px; margin-top: 4px; }
     .down-list { font-size: 11px; font-weight: 700; margin-top: 5px; word-break: break-all; }
-    /* -------------------------- */
+
+    /* --- WIFI CLIENT LIST TASARIMI --- */
+    .wifi-container { margin-top: 15px; max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 14px; border: 1px solid var(--border); }
+    .wifi-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .wifi-table th { text-align: left; padding: 8px; color: var(--accent); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #0c2a4a; z-index: 1; }
+    .wifi-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .wifi-table tr:last-child td { border-bottom: none; }
+    .wifi-container::-webkit-scrollbar { width: 4px; }
+    .wifi-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
     .sensor-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
     .big-val { font-size: 42px; font-weight: 800; color: var(--text); display: flex; align-items: baseline; }
     .big-val span { font-size: 16px; color: var(--muted); margin-left: 4px; }
 
-    .chart-box {
-      background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 10px;
-      border: 1px solid var(--border); margin-top: 10px; height: 220px;
-    }
+    .chart-box { background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 10px; border: 1px solid var(--border); margin-top: 10px; height: 220px; }
 
     .btn {
       flex: 1; border: 1px solid var(--border); background: rgba(255,255,255,0.05);
@@ -99,14 +85,8 @@
       grid-column: 1 / -1; display: flex; gap: 10px;
       background: var(--card); padding: 8px; border-radius: 16px; border: 1px solid var(--border);
     }
-    .todo-input-row input {
-      flex: 1; background: transparent; border: none; color: white;
-      padding: 10px; outline: none; font-size: 14px;
-    }
-    .add-btn {
-      background: var(--accent); color: #000; border: none;
-      padding: 0 20px; border-radius: 12px; font-weight: 800; cursor: pointer;
-    }
+    .todo-input-row input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 14px; }
+    .add-btn { background: var(--accent); color: #000; border: none; padding: 0 20px; border-radius: 12px; font-weight: 800; cursor: pointer; }
     .todo-list { list-style: none; padding: 0; margin: 0; }
     .todo-item {
       background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -115,15 +95,10 @@
       font-size: 13px; border-left: 4px solid var(--accent);
     }
     .todo-item.done { border-left-color: var(--success); opacity: 0.5; text-decoration: line-through; }
-    .todo-item span { cursor: pointer; flex: 1; }
     .del-btn { color: var(--danger); background: none; border: none; font-size: 18px; cursor: pointer; padding-left: 10px; }
 
     .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-bottom: 40px; }
-    .badge {
-      background: rgba(255, 255, 255, 0.08); padding: 6px 12px;
-      border-radius: 12px; font-size: 11px; border: 1px solid var(--border);
-      display: flex; align-items: center; gap: 6px;
-    }
+    .badge { background: rgba(255, 255, 255, 0.08); padding: 6px 12px; border-radius: 12px; font-size: 11px; border: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
     .mono { font-family: ui-monospace, monospace; font-weight: 700; color: var(--accent); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; }
   </style>
@@ -176,6 +151,22 @@
           <div class="card-label">Anlık POD Bilgisi</div>
           <div style="font-size: 12px;">
             <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
+          </div>
+          
+          <div class="card-label" style="margin-top:15px; font-size:9px;">Canlı WiFi İstemcileri</div>
+          <div class="wifi-container">
+            <table class="wifi-table">
+              <thead>
+                <tr>
+                  <th>Cihaz</th>
+                  <th>IP</th>
+                  <th>MAC</th>
+                </tr>
+              </thead>
+              <tbody id="wifi-list-body">
+                <tr><td colspan="3" style="text-align:center; opacity:0.5;">Yükleniyor...</td></tr>
+              </tbody>
+            </table>
           </div>
           <div style="font-size: 10px; color: var(--muted); margin-top:8px;" id="db-update-time">--</div>
         </div>
@@ -231,7 +222,7 @@
     // -------- LIVE CLOCK --------
     setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR'); }, 1000);
 
-    // -------- LAB DATA --------
+    // -------- LAB DATA & WIFI CLIENTS --------
     async function fetchLabData() {
       try {
         const res = await fetch('http://192.168.6.230:5000/data');
@@ -243,14 +234,40 @@
         }
       } catch (e) {}
     }
-    setInterval(fetchLabData, 5000); fetchLabData();
+
+    async function fetchWifiClients() {
+      try {
+        const res = await fetch('http://192.168.6.230:5000/wifi');
+        const data = await res.json();
+        const tbody = document.getElementById('wifi-list-body');
+        
+        if (data.error) {
+            tbody.innerHTML = `<tr><td colspan="3" style="color:var(--danger)">${data.error}</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map(c => `
+          <tr>
+            <td style="font-weight:700;">${c.name}</td>
+            <td class="mono" style="font-size:10px;">${c.ip}</td>
+            <td style="opacity:0.5; font-size:9px;">${c.mac}</td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error("Wifi API Hatası"); }
+    }
+
+    // Periyodik Güncellemeler
+    setInterval(fetchLabData, 5000);
+    setInterval(fetchWifiClients, 60000); // Wifi listesi 60 saniyede bir
+    
+    fetchLabData();
+    fetchWifiClients();
 
     // -------- ÖZET PING HESAPLAMA VE GÖSTERİM --------
     async function fetchPingData() {
       try {
         const res = await fetch('http://192.168.6.230:5000/ping');
         const data = await res.json();
-        
         const total = data.length;
         const upCount = data.filter(i => i.status === 'UP').length;
         const downCount = total - upCount;
@@ -277,23 +294,25 @@
     function pad2(n) { return String(n).padStart(2, '0'); }
     function localHourKey(dt) { return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}T${pad2(dt.getHours())}:00`; }
     async function drawChart() {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=Europe%2FAmsterdam');
-      const d = await res.json();
-      document.getElementById('geo-pos').innerText = d.latitude + "N, " + d.longitude + "E";
-      document.getElementById('geo-tz').innerText = d.timezone_abbreviation || 'CET';
-      const times = d.hourly.time; const temps = d.hourly.temperature_2m;
-      const now = new Date(); const key = localHourKey(now);
-      let startIdx = times.indexOf(key);
-      if (startIdx === -1) startIdx = times.findIndex(t => t >= key) || 0;
-      const sliceTimes = times.slice(startIdx, startIdx + 12);
-      const sliceTemps = temps.slice(startIdx, startIdx + 12);
-      const labels = sliceTimes.map(t => t.split('T')[1].slice(0, 5));
-      if (weatherChart) weatherChart.destroy();
-      weatherChart = new Chart(document.getElementById('weatherChart'), {
-        type: 'line',
-        data: { labels, datasets: [{ label: 'Temp', data: sliceTemps, borderColor: '#fce300', fill: true, backgroundColor: 'rgba(252,227,0,0.1)', tension: 0.4 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)' } }, y: { ticks: { color: 'rgba(255,255,255,0.2)' } } } }
-      });
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=Europe%2FAmsterdam');
+        const d = await res.json();
+        document.getElementById('geo-pos').innerText = d.latitude + "N, " + d.longitude + "E";
+        document.getElementById('geo-tz').innerText = d.timezone_abbreviation || 'CET';
+        const times = d.hourly.time; const temps = d.hourly.temperature_2m;
+        const now = new Date(); const key = localHourKey(now);
+        let startIdx = times.indexOf(key);
+        if (startIdx === -1) startIdx = times.findIndex(t => t >= key) || 0;
+        const sliceTimes = times.slice(startIdx, startIdx + 12);
+        const sliceTemps = temps.slice(startIdx, startIdx + 12);
+        const labels = sliceTimes.map(t => t.split('T')[1].slice(0, 5));
+        if (weatherChart) weatherChart.destroy();
+        weatherChart = new Chart(document.getElementById('weatherChart'), {
+          type: 'line',
+          data: { labels, datasets: [{ label: 'Temp', data: sliceTemps, borderColor: '#fce300', fill: true, backgroundColor: 'rgba(252,227,0,0.1)', tension: 0.4 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)' } }, y: { ticks: { color: 'rgba(255,255,255,0.2)' } } } }
+        });
+      } catch(e) {}
     }
     drawChart();
   </script>
