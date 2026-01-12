@@ -38,7 +38,7 @@
       padding: 20px; position: relative;
     }
     .card-label {
-      text-transform: uppercase; font-size: 11px; letter-spacing: 1.2px;
+      text-transform: capitalize; font-size: 11px; letter-spacing: 1.2px;
       color: var(--accent); font-weight: 700; margin-bottom: 12px;
       display: flex; align-items: center; gap: 8px;
     }
@@ -114,12 +114,12 @@
     <div class="grid">
       <div style="display: flex; flex-direction: column; gap: 16px;">
         <div class="card">
-          <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu</div>
+          <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu (API Request to Open Meteo)</div>
           <div class="chart-box"><canvas id="weatherChart"></canvas></div>
         </div>
 
         <div class="card">
-          <div class="card-label"><span class="dot"></span> Ağ Altyapı Özeti</div>
+          <div class="card-label"><span class="dot"></span> Ağ Altyapı Özeti (API GW to Zabbix ICMP Sensor)</div>
           <div id="ping-summary" class="ping-summary-grid">
             <div style="color:var(--muted); font-size:12px;">Veriler işleniyor...</div>
           </div>
@@ -127,7 +127,7 @@
       </div>
 
       <div class="card">
-        <div class="card-label">Sistem Odası İklimlendirme</div>
+        <div class="card-label">Sistem Odası İklimlendirme (API GW to PostgreSQL)</div>
         <div class="sensor-row">
           <div>
             <div style="font-size:11px; color:var(--muted)">Sıcaklık</div>
@@ -140,7 +140,7 @@
         </div>
 
         <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border);">
-          <div class="card-label">Vantilatör Kontrol</div>
+          <div class="card-label">Vantilatör Kontrol (Api GW to IOT via SSH)</div>
           <div style="display:flex; gap:10px;">
             <button class="btn btn-on" onclick="controlFan('AC')">Fan Aç</button>
             <button class="btn btn-off" onclick="controlFan('KAPAT')">Kapat</button>
@@ -153,7 +153,7 @@
             <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
           </div>
           
-          <div class="card-label" style="margin-top:15px; font-size:9px;">Canlı WiFi İstemcileri</div>
+          <div class="card-label" style="margin-top:15px; font-size:9px;">WiFi İstemcileri (Api GW to Unifi Controller)</div>
           <div class="wifi-container">
             <table class="wifi-table">
               <thead>
