@@ -114,12 +114,12 @@
     <div class="grid">
       <div style="display: flex; flex-direction: column; gap: 16px;">
         <div class="card">
-          <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu (API Request to Open Meteo)</div>
+          <div class="card-label">Vianen Saatlik Hava Tahmin Tablosu (Direct API Request to Open Meteo)</div>
           <div class="chart-box"><canvas id="weatherChart"></canvas></div>
         </div>
 
         <div class="card">
-          <div class="card-label"><span class="dot"></span> Ağ Altyapı Özeti (API GW to Zabbix ICMP Sensor)</div>
+          <div class="card-label"><span class="dot"></span>Ağ Altyapı Özeti (API Request to Zabbix for ICMP Sensors via API GW)</div>
           <div id="ping-summary" class="ping-summary-grid">
             <div style="color:var(--muted); font-size:12px;">Veriler işleniyor...</div>
           </div>
@@ -127,7 +127,7 @@
       </div>
 
       <div class="card">
-        <div class="card-label">Sistem Odası İklimlendirme (API GW to PostgreSQL)</div>
+        <div class="card-label">Çevresel Sensör Veri Takibi (SQL Query to PostgreSQL for Temperature and Humidity via API GW)</div>
         <div class="sensor-row">
           <div>
             <div style="font-size:11px; color:var(--muted)">Sıcaklık</div>
@@ -140,7 +140,7 @@
         </div>
 
         <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border);">
-          <div class="card-label">Vantilatör Kontrol (Api GW to IOT via SSH)</div>
+          <div class="card-label">Uzaktan IoT Cihaz Yönetimi (Remote Script Execution via SSH/Paramiko for IoT Control via API GW)</div>
           <div style="display:flex; gap:10px;">
             <button class="btn btn-on" onclick="controlFan('AC')">Fan Aç</button>
             <button class="btn btn-off" onclick="controlFan('KAPAT')">Kapat</button>
@@ -153,7 +153,7 @@
             <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:11px; word-break: break-all;">__POD_NAME__</span>
           </div>
           
-          <div class="card-label" style="margin-top:15px; font-size:12px;">WiFi İstemcileri (Api GW to Unifi Controller)</div>
+          <div class="card-label" style="margin-top:15px; font-size:12px;">Kablosuz Ağ İstemci Analizi (API Request to UniFi Controller for Active Wi-Fi Clients via API GW)</div>
           <div class="wifi-container">
             <table class="wifi-table">
               <thead>
@@ -191,6 +191,7 @@
     <div class="badge-row">
       <div class="badge"><span class="dot"></span> Online</div>
       <div class="badge">Gateway: <span class="mono">192.168.6.230</span></div>
+      <div class="badge">Merkezi Servis Entegrasyonu: <span class="mono">REST API for Network, IoT and Database Services</span></div>
       <div class="badge">Konum: <span class="mono" id="geo-pos">Vianen</span></div>
       <div class="badge">TZ: <span class="mono" id="geo-tz">--</span></div>
     </div>
