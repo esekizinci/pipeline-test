@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Intranet by Sekizinci</title>
-  <meta http-equiv="refresh" content="300">
+  <meta http-equiv="refresh" content="600">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -15,6 +15,7 @@
       --muted: rgba(255, 255, 255, 0.6);
       --border: rgba(255, 255, 255, 0.15);
       --success: #3ddc97; --danger: #ff4d4d;
+      --info: #3498db;
     }
     body {
       margin: 0; min-height: 100vh;
@@ -43,7 +44,6 @@
       display: flex; align-items: center; gap: 8px;
     }
 
-    /* --- ÖZET PİNG TASARIMI --- */
     .ping-summary-grid { display: flex; gap: 12px; margin-top: 5px; }
     .summary-box {
       flex: 1; padding: 15px; border-radius: 18px; border: 1px solid var(--border);
@@ -56,12 +56,10 @@
     .summary-label { font-size: 10px; text-transform: uppercase; opacity: 0.8; letter-spacing: 1px; margin-top: 4px; }
     .down-list { font-size: 11px; font-weight: 700; margin-top: 5px; word-break: break-all; }
 
-    /* --- WIFI CLIENT LIST TASARIMI --- */
     .wifi-container { margin-top: 15px; max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 14px; border: 1px solid var(--border); }
     .wifi-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .wifi-table th { text-align: left; padding: 8px; color: var(--accent); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #0c2a4a; z-index: 1; }
     .wifi-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .wifi-table tr:last-child td { border-bottom: none; }
     .wifi-container::-webkit-scrollbar { width: 4px; }
     .wifi-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
@@ -123,6 +121,13 @@
           <div id="ping-summary" class="ping-summary-grid">
             <div style="color:var(--muted); font-size:12px;">Veriler işleniyor...</div>
           </div>
+          
+          <div class="card-label" style="margin-top: 20px; margin-bottom: 10px;">
+            <span class="dot" style="background:var(--info)"></span>Internet Bant Genişliği (API Request to Zabbix for BW Usage via API GW)
+          </div>
+          <div class="chart-box" style="height: 160px; margin-top: 0;">
+            <canvas id="trafficChart"></canvas>
+          </div>
         </div>
       </div>
 
@@ -157,11 +162,7 @@
           <div class="wifi-container">
             <table class="wifi-table">
               <thead>
-                <tr>
-                  <th>Cihaz</th>
-                  <th>IP</th>
-                  <th>MAC</th>
-                </tr>
+                <tr><th>Cihaz</th><th>IP</th><th>MAC</th></tr>
               </thead>
               <tbody id="wifi-list-body">
                 <tr><td colspan="3" style="text-align:center; opacity:0.5;">Yükleniyor...</td></tr>
@@ -191,14 +192,15 @@
     <div class="badge-row">
       <div class="badge"><span class="dot"></span> Online</div>
       <div class="badge">Gateway: <span class="mono">192.168.6.230</span></div>
-      <div class="badge">Merkezi Servis Entegrasyonu: <span class="mono">REST API for Network, IoT and Database Services</span></div>
-      <div class="badge">Konum: <span class="mono" id="geo-pos">Vianen</span></div>
+      <div class="badge">Merkezi Servis Entegrasyonu: <span class="mono">REST API GW</span></div>
       <div class="badge">TZ: <span class="mono" id="geo-tz">--</span></div>
     </div>
   </div>
 
   <script>
-    // -------- TO-DO (LocalStorage) --------
+    const API_BASE = "http://192.168.6.230:5000";
+
+    // -------- TO-DO --------
     let todos = JSON.parse(localStorage.getItem('palas_tasks')) || [];
     function renderTodos() {
       const pList = document.getElementById('pendingList');
@@ -217,16 +219,14 @@
     function delTodo(i) { todos.splice(i, 1); renderTodos(); }
     renderTodos();
 
-    // -------- FAN API --------
-    async function controlFan(a) { try { await fetch(`http://192.168.6.230:5000/control/${a}`); } catch (e) { console.error("Fan API Hatası"); } }
-
-    // -------- LIVE CLOCK --------
+    // -------- CLOCK & FAN --------
     setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR'); }, 1000);
+    async function controlFan(a) { try { await fetch(`${API_BASE}/control/${a}`); } catch (e) {} }
 
-    // -------- LAB DATA & WIFI CLIENTS --------
+    // -------- SENSOR DATA & WIFI --------
     async function fetchLabData() {
       try {
-        const res = await fetch('http://192.168.6.230:5000/data');
+        const res = await fetch(`${API_BASE}/data`);
         const d = await res.json();
         if (d.temperature) {
           document.getElementById('db-temp').firstChild.textContent = d.temperature;
@@ -238,84 +238,95 @@
 
     async function fetchWifiClients() {
       try {
-        const res = await fetch('http://192.168.6.230:5000/wifi');
+        const res = await fetch(`${API_BASE}/wifi`);
         const data = await res.json();
         const tbody = document.getElementById('wifi-list-body');
-        
-        if (data.error) {
-            tbody.innerHTML = `<tr><td colspan="3" style="color:var(--danger)">${data.error}</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = data.map(c => `
-          <tr>
-            <td style="font-weight:700;">${c.name}</td>
-            <td class="mono" style="font-size:10px;">${c.ip}</td>
-            <td style="opacity:0.5; font-size:9px;">${c.mac}</td>
-          </tr>
-        `).join('');
-      } catch (e) { console.error("Wifi API Hatası"); }
+        if (data.error) return;
+        tbody.innerHTML = data.map(c => `<tr><td style="font-weight:700;">${c.name}</td><td class="mono" style="font-size:10px;">${c.ip}</td><td style="opacity:0.5; font-size:9px;">${c.mac}</td></tr>`).join('');
+      } catch (e) {}
     }
 
-    // Periyodik Güncellemeler
-    setInterval(fetchLabData, 5000);
-    setInterval(fetchWifiClients, 60000); // Wifi listesi 60 saniyede bir
-    
-    fetchLabData();
-    fetchWifiClients();
-
-    // -------- ÖZET PING HESAPLAMA VE GÖSTERİM --------
+    // -------- PING SUMMARY --------
     async function fetchPingData() {
       try {
-        const res = await fetch('http://192.168.6.230:5000/ping');
+        const res = await fetch(`${API_BASE}/ping`);
         const data = await res.json();
-        const total = data.length;
-        const upCount = data.filter(i => i.status === 'UP').length;
-        const downCount = total - upCount;
+        const total = data.length, up = data.filter(i => i.status === 'UP').length;
         const downDevices = data.filter(i => i.status !== 'UP').map(i => i.host);
-
-        const summaryContainer = document.getElementById('ping-summary');
-        summaryContainer.innerHTML = `
-          <div class="summary-box summary-up">
-            <div class="summary-val">${upCount}/${total}</div>
-            <div class="summary-label">ONLINE</div>
-          </div>
-          <div class="summary-box ${downCount > 0 ? 'summary-down' : 'summary-up'}" style="${downCount === 0 ? 'opacity: 0.4;' : ''}">
-            <div class="summary-val">${downCount}</div>
-            <div class="summary-label">DOWN</div>
-            <div class="down-list">${downCount > 0 ? downDevices.join(', ') : 'Hata Yok'}</div>
-          </div>
-        `;
-      } catch (e) { console.error("Ping API Hatası"); }
+        document.getElementById('ping-summary').innerHTML = `
+          <div class="summary-box summary-up"><div class="summary-val">${up}/${total}</div><div class="summary-label">ONLINE</div></div>
+          <div class="summary-box ${total-up > 0 ? 'summary-down' : 'summary-up'}" style="${total-up === 0 ? 'opacity: 0.4;' : ''}">
+            <div class="summary-val">${total-up}</div><div class="summary-label">DOWN</div>
+            <div class="down-list">${downDevices.length > 0 ? downDevices.join(', ') : 'Temiz'}</div>
+          </div>`;
+      } catch (e) {}
     }
-    setInterval(fetchPingData, 60000); fetchPingData();
 
     // -------- WEATHER CHART --------
     let weatherChart;
-    function pad2(n) { return String(n).padStart(2, '0'); }
-    function localHourKey(dt) { return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}T${pad2(dt.getHours())}:00`; }
-    async function drawChart() {
+    async function drawWeather() {
       try {
         const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=Europe%2FAmsterdam');
         const d = await res.json();
-        document.getElementById('geo-pos').innerText = d.latitude + "N, " + d.longitude + "E";
         document.getElementById('geo-tz').innerText = d.timezone_abbreviation || 'CET';
-        const times = d.hourly.time; const temps = d.hourly.temperature_2m;
-        const now = new Date(); const key = localHourKey(now);
-        let startIdx = times.indexOf(key);
-        if (startIdx === -1) startIdx = times.findIndex(t => t >= key) || 0;
-        const sliceTimes = times.slice(startIdx, startIdx + 12);
-        const sliceTemps = temps.slice(startIdx, startIdx + 12);
-        const labels = sliceTimes.map(t => t.split('T')[1].slice(0, 5));
+        const labels = d.hourly.time.slice(0, 12).map(t => t.split('T')[1].slice(0, 5));
+        const temps = d.hourly.temperature_2m.slice(0, 12);
         if (weatherChart) weatherChart.destroy();
         weatherChart = new Chart(document.getElementById('weatherChart'), {
           type: 'line',
-          data: { labels, datasets: [{ label: 'Temp', data: sliceTemps, borderColor: '#fce300', fill: true, backgroundColor: 'rgba(252,227,0,0.1)', tension: 0.4 }] },
+          data: { labels, datasets: [{ label: 'Temp', data: temps, borderColor: '#fce300', fill: true, backgroundColor: 'rgba(252,227,0,0.1)', tension: 0.4 }] },
           options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)' } }, y: { ticks: { color: 'rgba(255,255,255,0.2)' } } } }
         });
       } catch(e) {}
     }
-    drawChart();
+
+    // -------- TRAFFIC CHART (ZABBIX) --------
+    let trafficChart;
+    const MAX_POINTS = 20;
+    function initTrafficChart() {
+      const ctx = document.getElementById('trafficChart').getContext('2d');
+      trafficChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            { label: 'Giriş (In)', borderColor: '#3ddc97', backgroundColor: 'rgba(61,220,151,0.1)', data: [], fill: true, tension: 0.4, pointRadius: 0 },
+            { label: 'Çıkış (Out)', borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)', data: [], fill: true, tension: 0.4, pointRadius: 0 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: 'rgba(255,255,255,0.5)', font: { size: 9 } } } },
+          scales: { x: { display: false }, y: { ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 8 } }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+        }
+      });
+    }
+
+    async function updateTraffic() {
+      try {
+        const res = await fetch(`${API_BASE}/traffic`);
+        const data = await res.json();
+        const now = new Date().toLocaleTimeString();
+        trafficChart.data.labels.push(now);
+        trafficChart.data.datasets[0].data.push(data.in);
+        trafficChart.data.datasets[1].data.push(data.out);
+        if (trafficChart.data.labels.length > MAX_POINTS) {
+          trafficChart.data.labels.shift();
+          trafficChart.data.datasets[0].data.shift();
+          trafficChart.data.datasets[1].data.shift();
+        }
+        trafficChart.update('none');
+      } catch (e) {}
+    }
+
+    // Periyotlar
+    initTrafficChart();
+    setInterval(fetchLabData, 5000);
+    setInterval(updateTraffic, 5000); // 5 saniyede bir canlı trafik
+    setInterval(fetchPingData, 30000);
+    setInterval(fetchWifiClients, 60000);
+
+    fetchLabData(); fetchWifiClients(); fetchPingData(); drawWeather(); updateTraffic();
   </script>
 </body>
 </html>
