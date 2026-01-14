@@ -121,7 +121,7 @@
           <div id="ping-summary" class="ping-summary-grid">
             <div style="color:var(--muted); font-size:12px;">Veriler işleniyor...</div>
           </div>
-          
+
           <div class="card-label" style="margin-top: 20px; margin-bottom: 10px;">
             <span class="dot" style="background:var(--info)"></span>Canlı Bant Genişliği Analizi (Zabbix net.if.in/out)
           </div>
@@ -157,7 +157,7 @@
           <div style="font-size: 12px;">
             <span class="mono" id="pod-id" style="display:block; margin-top:4px; font-size:15px; color: #3ddc97; word-break: break-all;">__POD_NAME__</span>
           </div>
-          
+
           <div class="card-label" style="margin-top:15px; font-size:12px;">Kablosuz Ağ İstemci Analizi (API Request to UniFi Controller for Active Wi-Fi Clients via API GW)</div>
           <div class="wifi-container">
             <table class="wifi-table">
@@ -282,7 +282,10 @@
 
     // -------- TRAFFIC CHART (ZABBIX) --------
     let trafficChart;
-    const MAX_POINTS = 50; // Geçmiş veri için noktayı artırdık
+
+    const TRAFFIC_INTERVAL_MS = 10000;   // 10 sn
+    const WINDOW_MINUTES = 5;            // 5 dk
+    const TRAFFIC_MAX_POINTS = (WINDOW_MINUTES * 60 * 1000) / TRAFFIC_INTERVAL_MS; // 30
 
     function initTrafficChart() {
       const ctx = document.getElementById('trafficChart').getContext('2d');
@@ -297,8 +300,8 @@
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false }, // Tooltip iyileştirmesi
-          plugins: { 
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
             legend: { labels: { color: 'rgba(255,255,255,0.5)', font: { size: 9 } } },
             tooltip: {
               callbacks: {
@@ -306,66 +309,77 @@
               }
             }
           },
-          scales: { 
-            x: { display: false }, 
-            y: { 
-              ticks: { 
-                color: 'rgba(255,255,255,0.2)', 
+          scales: {
+            x: {
+              display: true,
+              ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 7 }, maxTicksLimit: 10 },
+              grid: { display: false }
+            },
+            y: {
+              ticks: {
+                color: 'rgba(255,255,255,0.2)',
                 font: { size: 8 },
-                callback: function(value) { return value + ' Mb'; } // Y ekseni birimi
-              }, 
-              grid: { color: 'rgba(255,255,255,0.05)' } 
-            } 
+                callback: function(value) { return value + ' Mb'; }
+              },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            }
           }
         }
       });
     }
 
-    // Sayfa açılışında geçmiş veriyi çekme fonksiyonu
+    function trimTrafficToWindow() {
+      while (trafficChart.data.labels.length > TRAFFIC_MAX_POINTS) {
+        trafficChart.data.labels.shift();
+        trafficChart.data.datasets[0].data.shift();
+        trafficChart.data.datasets[1].data.shift();
+      }
+    }
+
     async function initTrafficWithHistory() {
       try {
         const res = await fetch(`${API_BASE}/traffic-history`);
         const hist = await res.json();
-        if (!hist.error && hist.labels.length > 0) {
-          trafficChart.data.labels = hist.labels;
-          trafficChart.data.datasets[0].data = hist.in;
-          trafficChart.data.datasets[1].data = hist.out;
+
+        if (!hist.error && hist.labels && hist.labels.length > 0) {
+          const start = Math.max(0, hist.labels.length - TRAFFIC_MAX_POINTS);
+          trafficChart.data.labels = hist.labels.slice(start);
+          trafficChart.data.datasets[0].data = hist.in.slice(start);
+          trafficChart.data.datasets[1].data = hist.out.slice(start);
           trafficChart.update();
         }
-      } catch (e) { console.error("History fetch error"); }
-      
-      // Geçmiş yüklendikten (veya hata aldıktan) sonra canlı döngüyü başlat
-      setInterval(updateTraffic, 5000);
+      } catch (e) {
+        console.error("History fetch error", e);
+      }
+
+      setInterval(updateTraffic, TRAFFIC_INTERVAL_MS);
     }
 
     async function updateTraffic() {
       try {
         const res = await fetch(`${API_BASE}/traffic`);
         const data = await res.json();
-        const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-        
+
+        const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
         trafficChart.data.labels.push(now);
         trafficChart.data.datasets[0].data.push(data.in);
         trafficChart.data.datasets[1].data.push(data.out);
-        
-        if (trafficChart.data.labels.length > MAX_POINTS) {
-          trafficChart.data.labels.shift();
-          trafficChart.data.datasets[0].data.shift();
-          trafficChart.data.datasets[1].data.shift();
-        }
+
+        trimTrafficToWindow();
         trafficChart.update('none');
       } catch (e) {}
     }
 
-    // Başlatıcılar
+    // -------- START --------
     initTrafficChart();
-    initTrafficWithHistory(); // Önce geçmişi al, sonra canlıyı başlatır
-    
+    initTrafficWithHistory();
+
     setInterval(fetchLabData, 5000);
     setInterval(fetchPingData, 30000);
     setInterval(fetchWifiClients, 60000);
 
-    fetchLabData(); fetchWifiClients(); fetchPingData(); drawWeather(); updateTraffic();
+    fetchLabData(); fetchWifiClients(); fetchPingData(); drawWeather();
   </script>
 </body>
 </html>
