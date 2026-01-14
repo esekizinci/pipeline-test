@@ -4,6 +4,7 @@ metadata:
   name: hava
 spec:
   replicas: 2
+  revisionHistoryLimit: 3 # Sadece son 3 eski sürümü saklar, gerisini otomatik siler.
   selector:
     matchLabels:
       app: hava
