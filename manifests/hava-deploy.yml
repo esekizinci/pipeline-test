@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: hava
-        image: ghcr.io/esekizinci/pipeline-test:7d74ef7f
+        image: ghcr.io/esekizinci/pipeline-test:cef062e6
         env:
         - name: POD_NAME
           valueFrom:
