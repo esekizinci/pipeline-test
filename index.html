@@ -280,12 +280,11 @@
       } catch(e) {}
     }
 
-    // -------- TRAFFIC CHART (ZABBIX) --------
-    let trafficChart;
+// -------- TRAFFIC CHART (ZABBIX) - CLEANED & FIXED --------
 
+    let trafficChart;
     const TRAFFIC_INTERVAL_MS = 10000;   // 10 sn
-    const WINDOW_MINUTES = 5;            // 5 dk
-    const TRAFFIC_MAX_POINTS = (WINDOW_MINUTES * 60 * 1000) / TRAFFIC_INTERVAL_MS; // 30
+    const TRAFFIC_MAX_POINTS = 30;       // Grafikte görünecek max nokta
 
     function initTrafficChart() {
       const ctx = document.getElementById('trafficChart').getContext('2d');
@@ -300,29 +299,14 @@
         },
         options: {
           responsive: true, maintainAspectRatio: false,
+          animation: false, 
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { labels: { color: 'rgba(255,255,255,0.5)', font: { size: 9 } } },
-            tooltip: {
-              callbacks: {
-                label: function(context) { return context.dataset.label + ': ' + context.parsed.y + ' Mbps'; }
-              }
-            }
+            legend: { labels: { color: 'rgba(255,255,255,0.5)', font: { size: 9 } } }
           },
           scales: {
-            x: {
-              display: true,
-              ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10 }, maxTicksLimit: 10 },
-              grid: { display: false }
-            },
-            y: {
-              ticks: {
-                color: 'rgba(255,255,255,0.2)',
-                font: { size: 10 },
-                callback: function(value) { return value + ' Mb'; }
-              },
-              grid: { color: 'rgba(255,255,255,0.05)' }
-            }
+            x: { display: true, ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10 }, maxTicksLimit: 10 }, grid: { display: false } },
+            y: { ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10 }, callback: v => v + ' Mb' }, grid: { color: 'rgba(255,255,255,0.05)' } }
           }
         }
       });
@@ -336,22 +320,15 @@
       }
     }
 
-// -------- TRAFFIC CHART (ZABBIX) UPDATED --------
-
     async function updateTraffic() {
       try {
         const res = await fetch(`${API_BASE}/traffic`);
         const data = await res.json();
-
-        // Backend'den gelen veriyi kontrol et
         if (data.error) return;
 
-        // Backend Mbps (4 basamaklı) gönderiyor, in_raw bps gönderiyor. 
-        // Grafikte Mbps görmek için in_raw / 1.000.000 kullanmalıyız ya da in_str'den ayıklamalıyız.
-        // En güvenlisi Backend'de in_raw (bps) olduğu için onu Mbps'ye çevirmek:
+        // Backend'den gelen in_raw (bps) değerini Mbps'ye çeviriyoruz
         const inMbps = parseFloat((data.in_raw / 1000000).toFixed(4));
         const outMbps = parseFloat((data.out_raw / 1000000).toFixed(4));
-
         const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         trafficChart.data.labels.push(now);
@@ -359,9 +336,9 @@
         trafficChart.data.datasets[1].data.push(outMbps);
 
         trimTrafficToWindow();
-        trafficChart.update('none'); // Yumuşak geçiş için 'none'
+        trafficChart.update('none');
       } catch (e) {
-        console.error("Traffic update error:", e);
+        console.error("Update Hatası:", e);
       }
     }
 
@@ -369,9 +346,7 @@
       try {
         const res = await fetch(`${API_BASE}/traffic-history`);
         const hist = await res.json();
-
         if (!hist.error && hist.labels && hist.labels.length > 0) {
-          // Backend'den gelen 'in' ve 'out' zaten Mbps (round 4)
           const start = Math.max(0, hist.labels.length - TRAFFIC_MAX_POINTS);
           trafficChart.data.labels = hist.labels.slice(start);
           trafficChart.data.datasets[0].data = hist.in.slice(start);
@@ -379,27 +354,10 @@
           trafficChart.update();
         }
       } catch (e) {
-        console.error("History fetch error", e);
+        console.error("History Hatası:", e);
       }
-      
-      // İlk yüklemeden sonra periyodik güncellemeyi başlat
+      // Döngü burada tek bir kez başlar
       setInterval(updateTraffic, TRAFFIC_INTERVAL_MS);
-    }
-
-    async function updateTraffic() {
-      try {
-        const res = await fetch(`${API_BASE}/traffic`);
-        const data = await res.json();
-
-        const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-        trafficChart.data.labels.push(now);
-        trafficChart.data.datasets[0].data.push(data.in);
-        trafficChart.data.datasets[1].data.push(data.out);
-
-        trimTrafficToWindow();
-        trafficChart.update('none');
-      } catch (e) {}
     }
 
     // -------- START --------
