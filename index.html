@@ -60,6 +60,8 @@
     .wifi-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .wifi-table th { text-align: left; padding: 8px; color: var(--accent); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #0c2a4a; z-index: 1; }
     .wifi-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .wifi-container::-webkit-scrollbar { width: 4px; }
+    .wifi-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
     .sensor-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
     .big-val { font-size: 42px; font-weight: 800; color: var(--text); display: flex; align-items: baseline; }
@@ -98,13 +100,10 @@
     .mono { font-family: ui-monospace, monospace; font-weight: 700; color: var(--accent); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; }
 
-    /* Yeni Trafik Paneli Stili */
-    .traffic-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
-    .traffic-box {
-      background: rgba(0,0,0,0.2); padding: 15px; border-radius: 18px; border: 1px solid var(--border);
-      text-align: center;
-    }
-    .traffic-val { font-size: 22px; font-weight: 800; margin: 4px 0; font-family: ui-monospace, monospace; }
+    /* Trafik İstatistik Kutuları */
+    .traffic-stats-grid { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 5px; }
+    .traffic-box { flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 12px; }
+    .traffic-val { font-size: 16px; font-weight: 800; font-family: ui-monospace, monospace; }
   </style>
 </head>
 
@@ -129,20 +128,23 @@
           </div>
 
           <div class="card-label" style="margin-top: 20px; margin-bottom: 10px;">
-            <span class="dot" style="background:var(--info)"></span>Canlı Bant Genişliği Analizi (API Request to Zabbix for Internet via API GW)
+            <span class="dot" style="background:var(--info)"></span>Canlı Bant Genişliği Analizi (Cisco 3560G Gig0/5)
           </div>
-          
+
           <div class="traffic-stats-grid">
-            <div class="traffic-box" style="border-left: 4px solid var(--success);">
-              <div style="font-size: 10px; color: var(--muted);">GİRİŞ (IN)</div>
-              <div class="traffic-val" id="stat-in" style="color: var(--success);">-- bps</div>
+            <div class="traffic-box" style="border-left: 3px solid var(--success);">
+              <div style="font-size:9px; color:var(--muted); text-transform:uppercase;">Giriş (In)</div>
+              <div class="traffic-val" id="stat-in" style="color:var(--success);">--</div>
             </div>
-            <div class="traffic-box" style="border-left: 4px solid var(--info);">
-              <div style="font-size: 10px; color: var(--muted);">ÇIKIŞ (OUT)</div>
-              <div class="traffic-val" id="stat-out" style="color: var(--info);">-- bps</div>
+            <div class="traffic-box" style="border-left: 3px solid var(--info);">
+              <div style="font-size:9px; color:var(--muted); text-transform:uppercase;">Çıkış (Out)</div>
+              <div class="traffic-val" id="stat-out" style="color:var(--info);">--</div>
             </div>
           </div>
-          <div id="traffic-ts" style="font-size: 10px; color: var(--muted); margin-top: 8px; text-align: right; font-family: mono;">Son Güncelleme: --:--:--</div>
+
+          <div class="chart-box" style="height: 160px; margin-top: 10px;">
+            <canvas id="trafficChart"></canvas>
+          </div>
         </div>
       </div>
 
@@ -295,33 +297,77 @@
       } catch(e) {}
     }
 
-    // -------- TRAFFIC STATS (NEW) --------
+    // -------- TRAFFIC CHART (DÜZELTİLDİ) --------
+    let trafficChart;
+    const TRAFFIC_INTERVAL_MS = 5000;    // 5 sn (Cisco SSH hızı için ideal)
+    const TRAFFIC_MAX_POINTS = 20;
+
+    function initTrafficChart() {
+      const ctx = document.getElementById('trafficChart').getContext('2d');
+      trafficChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            { label: 'In (Mbps)', borderColor: '#3ddc97', backgroundColor: 'rgba(61,220,151,0.1)', data: [], fill: true, tension: 0.4, pointRadius: 0 },
+            { label: 'Out (Mbps)', borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)', data: [], fill: true, tension: 0.4, pointRadius: 0 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400 },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 9 } }, grid: { display: false } },
+            y: { 
+              beginAtZero: true,
+              ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 9 }, callback: v => v + ' Mb' }, 
+              grid: { color: 'rgba(255,255,255,0.05)' } 
+            }
+          }
+        }
+      });
+    }
+
     async function updateTraffic() {
       try {
         const res = await fetch(`${API_BASE}/traffic`);
         const data = await res.json();
         if (data.error) return;
-        
+
+        // Metin alanlarını güncelle
         document.getElementById('stat-in').innerText = data.in_str;
         document.getElementById('stat-out').innerText = data.out_str;
-        document.getElementById('traffic-ts').innerText = "Son Güncelleme: " + data.ts;
-      } catch (e) {
-        console.error("Trafik verisi alınamadı");
-      }
+
+        // Grafiği güncelle (Mbps cinsinden ekliyoruz)
+        const inMbps = parseFloat((data.in_raw / 1000000).toFixed(4));
+        const outMbps = parseFloat((data.out_raw / 1000000).toFixed(4));
+        const now = data.ts;
+
+        trafficChart.data.labels.push(now);
+        trafficChart.data.datasets[0].data.push(inMbps);
+        trafficChart.data.datasets[1].data.push(outMbps);
+
+        if (trafficChart.data.labels.length > TRAFFIC_MAX_POINTS) {
+          trafficChart.data.labels.shift();
+          trafficChart.data.datasets[0].data.shift();
+          trafficChart.data.datasets[1].data.shift();
+        }
+        trafficChart.update('none');
+      } catch (e) {}
     }
 
     // -------- START --------
-    fetchLabData(); 
-    fetchWifiClients(); 
-    fetchPingData(); 
-    drawWeather();
-    updateTraffic();
-
-    // Periyotlar
+    initTrafficChart();
+    
+    // Döngüler
+    setInterval(updateTraffic, TRAFFIC_INTERVAL_MS);
     setInterval(fetchLabData, 5000);
-    setInterval(updateTraffic, 30000); // 30 saniyede bir trafik güncellemesi
     setInterval(fetchPingData, 30000);
     setInterval(fetchWifiClients, 60000);
+
+    // İlk Yükleme
+    fetchLabData(); fetchWifiClients(); fetchPingData(); drawWeather(); updateTraffic();
   </script>
 </body>
 </html>
