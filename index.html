@@ -336,12 +336,42 @@
       }
     }
 
+// -------- TRAFFIC CHART (ZABBIX) UPDATED --------
+
+    async function updateTraffic() {
+      try {
+        const res = await fetch(`${API_BASE}/traffic`);
+        const data = await res.json();
+
+        // Backend'den gelen veriyi kontrol et
+        if (data.error) return;
+
+        // Backend Mbps (4 basamaklı) gönderiyor, in_raw bps gönderiyor. 
+        // Grafikte Mbps görmek için in_raw / 1.000.000 kullanmalıyız ya da in_str'den ayıklamalıyız.
+        // En güvenlisi Backend'de in_raw (bps) olduğu için onu Mbps'ye çevirmek:
+        const inMbps = parseFloat((data.in_raw / 1000000).toFixed(4));
+        const outMbps = parseFloat((data.out_raw / 1000000).toFixed(4));
+
+        const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        trafficChart.data.labels.push(now);
+        trafficChart.data.datasets[0].data.push(inMbps);
+        trafficChart.data.datasets[1].data.push(outMbps);
+
+        trimTrafficToWindow();
+        trafficChart.update('none'); // Yumuşak geçiş için 'none'
+      } catch (e) {
+        console.error("Traffic update error:", e);
+      }
+    }
+
     async function initTrafficWithHistory() {
       try {
         const res = await fetch(`${API_BASE}/traffic-history`);
         const hist = await res.json();
 
         if (!hist.error && hist.labels && hist.labels.length > 0) {
+          // Backend'den gelen 'in' ve 'out' zaten Mbps (round 4)
           const start = Math.max(0, hist.labels.length - TRAFFIC_MAX_POINTS);
           trafficChart.data.labels = hist.labels.slice(start);
           trafficChart.data.datasets[0].data = hist.in.slice(start);
@@ -351,7 +381,8 @@
       } catch (e) {
         console.error("History fetch error", e);
       }
-
+      
+      // İlk yüklemeden sonra periyodik güncellemeyi başlat
       setInterval(updateTraffic, TRAFFIC_INTERVAL_MS);
     }
 
