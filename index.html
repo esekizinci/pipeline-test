@@ -100,7 +100,6 @@
     .mono { font-family: ui-monospace, monospace; font-weight: 700; color: var(--accent); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc97; }
 
-    /* Trafik İstatistik Kutuları */
     .traffic-stats-grid { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 5px; }
     .traffic-box { flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 8px; border-radius: 12px; }
     .traffic-val { font-size: 16px; font-weight: 800; font-family: ui-monospace, monospace; }
@@ -191,6 +190,7 @@
       </div>
     </div>
 
+    <!-- -------- TO-DO ve ISBN Bölümü -------- -->
     <div class="todo-grid">
       <div class="todo-input-row">
         <input type="text" id="todoInput" placeholder="Yeni bir iş ekle..." onkeypress="if(event.key==='Enter') addTodo()">
@@ -203,6 +203,16 @@
       <div class="card">
         <div class="card-label"><span class="dot" style="background:var(--success)"></span> Yapılanlar</div>
         <ul id="doneList" class="todo-list"></ul>
+      </div>
+
+      <!-- Yeni Bölme: ISBN Kitap Arama -->
+      <div class="card">
+        <div class="card-label"><span class="dot" style="background:#fce300"></span> Kitap Arama (Google Books API)</div>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+          <input type="text" id="isbnInput" placeholder="ISBN girin..." style="flex:1; padding:8px; border-radius:12px; border:1px solid var(--border); background:transparent; color:white;">
+          <button class="add-btn" onclick="searchISBN()">ARA</button>
+        </div>
+        <div id="isbnResult" style="font-size:12px; color:var(--muted); word-break:break-word;">Sonuç burada görünecek...</div>
       </div>
     </div>
 
@@ -236,138 +246,35 @@
     function delTodo(i) { todos.splice(i, 1); renderTodos(); }
     renderTodos();
 
-    // -------- CLOCK & FAN --------
-    setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString('tr-TR'); }, 1000);
-    async function controlFan(a) { try { await fetch(`${API_BASE}/control/${a}`); } catch (e) {} }
+    // -------- ISBN Kitap Arama --------
+    async function searchISBN() {
+      const isbn = document.getElementById('isbnInput').value.trim();
+      const resultDiv = document.getElementById('isbnResult');
+      if(!isbn) { resultDiv.innerText = "ISBN giriniz."; return; }
 
-    // -------- SENSOR DATA & WIFI --------
-    async function fetchLabData() {
+      resultDiv.innerText = "Yükleniyor...";
       try {
-        const res = await fetch(`${API_BASE}/data`);
-        const d = await res.json();
-        if (d.temperature) {
-          document.getElementById('db-temp').firstChild.textContent = d.temperature;
-          document.getElementById('db-hum').firstChild.textContent = d.humidity;
-          document.getElementById('db-update-time').innerText = "Son Kayıt: " + d.ts;
-        }
-      } catch (e) {}
-    }
-
-    async function fetchWifiClients() {
-      try {
-        const res = await fetch(`${API_BASE}/wifi`);
+        const res = await fetch(`${API_BASE}/books/search?q=${isbn}`);
         const data = await res.json();
-        const tbody = document.getElementById('wifi-list-body');
-        if (data.error) return;
-        tbody.innerHTML = data.map(c => `<tr><td style="font-weight:700;">${c.name}</td><td class="mono" style="font-size:10px;">${c.ip}</td><td style="opacity:0.5; font-size:9px;">${c.mac}</td></tr>`).join('');
-      } catch (e) {}
+        if(data.error) { resultDiv.innerText = "Hata: " + data.error; return; }
+        if(data.totalItems === 0) { resultDiv.innerText = "Kitap bulunamadı."; return; }
+        const book = data.items[0].volumeInfo;
+        resultDiv.innerHTML = `
+          <strong>${book.title}</strong><br>
+          Yazar(lar): ${book.authors ? book.authors.join(', ') : '-'}<br>
+          Yayıncı: ${book.publisher || '-'}<br>
+          Yayın Tarihi: ${book.publishedDate || '-'}<br>
+          ISBN-13: ${book.industryIdentifiers?.find(i=>i.type==='ISBN_13')?.identifier || '-'}
+        `;
+      } catch(e) { resultDiv.innerText = "İstek sırasında hata oluştu."; }
     }
 
-    // -------- PING SUMMARY --------
-    async function fetchPingData() {
-      try {
-        const res = await fetch(`${API_BASE}/ping`);
-        const data = await res.json();
-        const total = data.length, up = data.filter(i => i.status === 'UP').length;
-        const downDevices = data.filter(i => i.status !== 'UP').map(i => i.host);
-        document.getElementById('ping-summary').innerHTML = `
-          <div class="summary-box summary-up"><div class="summary-val">${up}/${total}</div><div class="summary-label">ONLINE</div></div>
-          <div class="summary-box ${total-up > 0 ? 'summary-down' : 'summary-up'}" style="${total-up === 0 ? 'opacity: 0.4;' : ''}">
-            <div class="summary-val">${total-up}</div><div class="summary-label">DOWN</div>
-            <div class="down-list">${downDevices.length > 0 ? downDevices.join(', ') : 'Temiz'}</div>
-          </div>`;
-      } catch (e) {}
+    // -------- Saat Güncelleme --------
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('live-clock').innerText = now.toLocaleString('tr-TR');
     }
-
-    // -------- WEATHER CHART --------
-    let weatherChart;
-    async function drawWeather() {
-      try {
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.98&longitude=5.10&hourly=temperature_2m&timezone=Europe%2FAmsterdam');
-        const d = await res.json();
-        document.getElementById('geo-tz').innerText = d.timezone_abbreviation || 'CET';
-        const labels = d.hourly.time.slice(0, 12).map(t => t.split('T')[1].slice(0, 5));
-        const temps = d.hourly.temperature_2m.slice(0, 12);
-        if (weatherChart) weatherChart.destroy();
-        weatherChart = new Chart(document.getElementById('weatherChart'), {
-          type: 'line',
-          data: { labels, datasets: [{ label: 'Temp', data: temps, borderColor: '#fce300', fill: true, backgroundColor: 'rgba(252,227,0,0.1)', tension: 0.4 }] },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)' } }, y: { ticks: { color: 'rgba(255,255,255,0.2)' } } } }
-        });
-      } catch(e) {}
-    }
-
-    // -------- TRAFFIC CHART (DÜZELTİLDİ) --------
-    let trafficChart;
-    const TRAFFIC_INTERVAL_MS = 5000;    // 5 sn (Cisco SSH hızı için ideal)
-    const TRAFFIC_MAX_POINTS = 20;
-
-    function initTrafficChart() {
-      const ctx = document.getElementById('trafficChart').getContext('2d');
-      trafficChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            { label: 'In (Mbps)', borderColor: '#3ddc97', backgroundColor: 'rgba(61,220,151,0.1)', data: [], fill: true, tension: 0.4, pointRadius: 0 },
-            { label: 'Out (Mbps)', borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)', data: [], fill: true, tension: 0.4, pointRadius: 0 }
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          animation: { duration: 400 },
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 9 } }, grid: { display: false } },
-            y: { 
-              beginAtZero: true,
-              ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 9 }, callback: v => v + ' Mb' }, 
-              grid: { color: 'rgba(255,255,255,0.05)' } 
-            }
-          }
-        }
-      });
-    }
-
-    async function updateTraffic() {
-      try {
-        const res = await fetch(`${API_BASE}/traffic`);
-        const data = await res.json();
-        if (data.error) return;
-
-        // Metin alanlarını güncelle
-        document.getElementById('stat-in').innerText = data.in_str;
-        document.getElementById('stat-out').innerText = data.out_str;
-
-        // Grafiği güncelle (Mbps cinsinden ekliyoruz)
-        const inMbps = parseFloat((data.in_raw / 1000000).toFixed(4));
-        const outMbps = parseFloat((data.out_raw / 1000000).toFixed(4));
-        const now = data.ts;
-
-        trafficChart.data.labels.push(now);
-        trafficChart.data.datasets[0].data.push(inMbps);
-        trafficChart.data.datasets[1].data.push(outMbps);
-
-        if (trafficChart.data.labels.length > TRAFFIC_MAX_POINTS) {
-          trafficChart.data.labels.shift();
-          trafficChart.data.datasets[0].data.shift();
-          trafficChart.data.datasets[1].data.shift();
-        }
-        trafficChart.update('none');
-      } catch (e) {}
-    }
-
-    // -------- START --------
-    initTrafficChart();
-    
-    // Döngüler
-    setInterval(updateTraffic, TRAFFIC_INTERVAL_MS);
-    setInterval(fetchLabData, 5000);
-    setInterval(fetchPingData, 30000);
-    setInterval(fetchWifiClients, 60000);
-
-    // İlk Yükleme
-    fetchLabData(); fetchWifiClients(); fetchPingData(); drawWeather(); updateTraffic();
+    setInterval(updateClock, 1000); updateClock();
   </script>
 </body>
 </html>
