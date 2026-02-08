@@ -1,4 +1,5 @@
 .github
 manifests
 Dockerfile
+index_fixed.html
 .dockerignore
