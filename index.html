@@ -293,7 +293,7 @@
       } catch (e) {}
     }
 
-    // -------- WEATHER CHART (FIXED) --------
+// -------- WEATHER CHART (FIXED) --------
     let weatherChart;
     async function drawWeather() {
       try {
@@ -306,7 +306,6 @@
           return;
         }
         
-        // Find the closest time to now in the API response
         const now = new Date();
         let startIndex = 0;
         let minDiff = Infinity;
@@ -318,19 +317,15 @@
             minDiff = diff;
             startIndex = i;
           }
-          // Stop if we're past current time
           if (apiTime > now) break;
         }
         
-        // Determine how many hours to show (max 12, but adapt to available data)
         const maxHours = 12;
         const availableHours = d.hourly.time.length - startIndex;
         const hoursToShow = Math.min(maxHours, availableHours);
         
-        // Extract labels and temps for the range
         const labels = d.hourly.time.slice(startIndex, startIndex + hoursToShow).map(t => {
-          const timePart = t.split('T')[1].slice(0, 5);
-          return timePart;
+          return t.split('T')[1].slice(0, 5);
         });
         const temps = d.hourly.temperature_2m.slice(startIndex, startIndex + hoursToShow);
         
@@ -356,7 +351,8 @@
               tooltip: {
                 callbacks: {
                   label: function(context) {
-                    return context.parsed.y + '°C';
+                    // TOOLTIP: Kutucuk içindeki değeri 10.xx formatına sokar
+                    return context.parsed.y.toFixed(2) + '°C';
                   }
                 }
               }
@@ -371,7 +367,8 @@
                   color: 'rgba(255,255,255,0.6)',
                   font: { size: 10 },
                   callback: function(value) {
-                    return value + '°C';
+                    // Y EKSENİ: Yandaki rakamları 10.xx formatına sokar
+                    return value.toFixed(2) + '°C';
                   }
                 },
                 grid: { color: 'rgba(255,255,255,0.05)' }
@@ -379,8 +376,6 @@
             } 
           }
         });
-        
-        console.log(`Weather chart: showing ${hoursToShow} hours starting from index ${startIndex}`);
       } catch(e) {
         console.error('Weather fetch error:', e);
       }
